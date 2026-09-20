@@ -120,3 +120,55 @@ export interface Report {
   status: 'draft' | 'submitted'
   submitted_at: string | null
 }
+
+export interface Channel {
+  id: string
+  name: string
+  kind: 'general' | 'executive' | 'department' | 'project' | 'group'
+  department_id: string | null
+  project_id: string | null
+  created_by: string | null
+}
+
+export interface Message {
+  id: string
+  channel_id: string
+  author_id: string
+  body: string
+  mentions: string[]
+  created_at: string
+  deleted_at: string | null
+}
+
+export interface CalendarEvent {
+  id: string
+  title: string
+  description: string | null
+  kind: 'event' | 'recording' | 'publication' | 'deadline' | 'other'
+  starts_at: string
+  ends_at: string | null
+  all_day: boolean
+  visibility: 'everyone' | 'executive'
+  created_by: string | null
+}
+
+export const RESOURCE_CATEGORIES = [
+  'Governance', 'Policies', 'Department Manuals', 'Brand Assets', 'Research',
+  'MUI Conversations', 'Training', 'Templates', 'Meeting Minutes', 'Other',
+] as const
+
+export interface Resource {
+  id: string
+  title: string
+  description: string | null
+  category: string
+  kind: 'file' | 'link'
+  url: string | null
+  storage_path: string | null
+  file_name: string | null
+  mime_type: string | null
+  size_bytes: number | null
+  visibility: 'everyone' | 'executive'
+  uploaded_by: string | null
+  created_at: string
+}

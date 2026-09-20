@@ -34,3 +34,15 @@ New assignments/reviews are delivered immediately after the action; the schedule
 Run migration `20260920000002_reminders_delivery.sql`, then schedule `/api/cron/dispatch` every 5 minutes
 (pg_cron snippet at the bottom of that migration, or any cron that can send the `Authorization: Bearer $CRON_SECRET` header).
 SMS is only sent for due-today / overdue reminders to control cost.
+
+## Chat, calendar, resources
+
+- **Chat**: `#General` and `#Executive` exist by default; every department and project gets a channel automatically;
+  executives can start private group chats. `@Name`, `@Executive` and `@<Department>` notify people (only if they can
+  see the channel). Live updates use Supabase Realtime, with a 20s refresh as a fallback.
+- **Calendar**: shows your open tasks, meetings you're in, project due dates and events executives add
+  (recordings, publications, deadlines). All times are Nairobi time.
+- **Resources**: files (up to 25 MB, uploaded straight to a private Supabase Storage bucket) and links, grouped by
+  category. Downloads go through `/resources/[id]/download`, which checks access and issues a 60-second signed URL.
+
+Run migration `20260920000004_chat_calendar_resources.sql`. It also creates the private `resources` storage bucket.

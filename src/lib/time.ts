@@ -40,3 +40,24 @@ export function monthRange(d: Date = new Date()): { start: string; end: string; 
   const label = new Date(`${start}T12:00:00+03:00`).toLocaleDateString('en-KE', { timeZone: TZ, month: 'long', year: 'numeric' })
   return { start, end, label }
 }
+
+/** Compact chat timestamp: "14:05" today, otherwise "23 Sep, 14:05". */
+export function fmtChatTime(iso: string): string {
+  const d = new Date(iso)
+  const time = d.toLocaleTimeString('en-KE', { timeZone: TZ, hour: '2-digit', minute: '2-digit', hour12: false })
+  if (dayKey(d) === dayKey(new Date())) return time
+  return `${d.toLocaleDateString('en-KE', { timeZone: TZ, day: 'numeric', month: 'short' })}, ${time}`
+}
+
+/** Month grid helpers, all in Nairobi calendar terms. */
+export function parseMonthParam(param: string | undefined): { year: number; month: number } {
+  const m = /^(\d{4})-(\d{2})$/.exec(param ?? '')
+  if (m && +m[2] >= 1 && +m[2] <= 12) return { year: +m[1], month: +m[2] }
+  const [y, mo] = dayKey().split('-').map(Number)
+  return { year: y, month: mo }
+}
+export const monthParam = (year: number, month: number) => `${year}-${String(month).padStart(2, '0')}`
+export function shiftMonth(year: number, month: number, by: number) {
+  const d = new Date(Date.UTC(year, month - 1 + by, 1))
+  return { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1 }
+}

@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { Menu } from 'lucide-react'
 import { MOBILE_PRIMARY, visibleItems } from './nav-items'
 
-export function Nav({ role, unread }: { role: 'super_admin' | 'executive' | 'member'; unread: number }) {
+export function Nav({ role, unread, chatUnread }: { role: 'super_admin' | 'executive' | 'member'; unread: number; chatUnread: number }) {
   const path = usePathname()
   const items = visibleItems(role)
   const active = (href: string) => (href === '/' ? path === '/' : path.startsWith(href))
@@ -27,6 +27,9 @@ export function Nav({ role, unread }: { role: 'super_admin' | 'executive' | 'mem
             {href === '/notifications' && unread > 0 && (
               <span className="rounded-full bg-amber-500 px-2 text-xs font-semibold text-[#0D1F35]">{unread}</span>
             )}
+            {href === '/chat' && chatUnread > 0 && (
+              <span className="rounded-full bg-amber-500 px-2 text-xs font-semibold text-[#0D1F35]">{chatUnread}</span>
+            )}
           </Link>
         ))}
       </nav>
@@ -40,7 +43,7 @@ export function Nav({ role, unread }: { role: 'super_admin' | 'executive' | 'mem
             }`}>
             <Icon size={20} aria-hidden />
             {label}
-            {href === '/notifications' && unread > 0 && (
+            {((href === '/notifications' && unread > 0) || (href === '/chat' && chatUnread > 0)) && (
               <span className="absolute right-[28%] top-1 h-2 w-2 rounded-full bg-amber-500" />
             )}
           </Link>

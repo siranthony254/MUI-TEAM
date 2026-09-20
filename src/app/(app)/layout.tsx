@@ -16,9 +16,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     .eq('recipient_id', me.id)
     .is('read_at', null)
 
+  const { data: chatCounts } = await supabase.rpc('chat_unread_counts')
+  const chatUnread = (chatCounts ?? []).reduce((n: number, c: { unread: number }) => n + Number(c.unread), 0)
+
   return (
     <div className="flex min-h-screen bg-neutral-50 text-neutral-900">
-      <Nav role={me.role} unread={count ?? 0} />
+      <Nav role={me.role} unread={count ?? 0} chatUnread={chatUnread} />
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center justify-between gap-3 border-b border-neutral-200 bg-white px-4 py-3">
           <div className="min-w-0">
