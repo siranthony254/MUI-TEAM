@@ -18,6 +18,9 @@ export interface TeamMember {
   deliverables: string[]
   reports_to: string | null
   active: boolean
+  notify_email: boolean
+  notify_push: boolean
+  notify_sms: boolean
 }
 
 export interface Task {

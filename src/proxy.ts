@@ -1,7 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 
-const PUBLIC_PATHS = ['/login']
+// /api/cron authenticates itself with CRON_SECRET (no user session).
+const PUBLIC_PATHS = ['/login', '/api/cron']
 
 export default async function proxy(req: NextRequest) {
   const res = NextResponse.next({ request: req })

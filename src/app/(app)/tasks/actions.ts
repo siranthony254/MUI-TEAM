@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { requireMember, isExecOrAbove } from '@/lib/auth'
 import { allowedTransitions } from '@/lib/tasks'
+import { deliverSoon } from '@/lib/notify/after'
 import type { Task, TaskStatus } from '@/lib/types'
 
 export interface FormState { error?: string }
@@ -42,6 +43,7 @@ export async function createTask(_prev: FormState | undefined, formData: FormDat
     .single()
   if (error) return { error: error.message }
 
+  deliverSoon()
   revalidatePath('/', 'layout')
   redirect(`/tasks/${data.id}`)
 }
@@ -64,6 +66,7 @@ export async function delegateTask(_prev: FormState | undefined, formData: FormD
     .single()
   if (error) return { error: error.message }
 
+  deliverSoon()
   revalidatePath('/', 'layout')
   redirect(`/tasks/${data.id}`)
 }
@@ -95,6 +98,7 @@ export async function changeStatus(_prev: FormState | undefined, formData: FormD
   const { error } = await supabase.from('tasks').update(patch).eq('id', id)
   if (error) return { error: error.message }
 
+  deliverSoon()
   revalidatePath('/', 'layout')
   return {}
 }
