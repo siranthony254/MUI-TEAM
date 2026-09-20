@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { supabaseUrl } from '@/lib/supabase/url'
+import { verifyUser } from '@/lib/supabase/verify'
 
 // /api/cron authenticates itself with CRON_SECRET (no user session).
 const PUBLIC_PATHS = ['/login', '/api/cron']
@@ -23,7 +24,14 @@ export default async function proxy(req: NextRequest) {
   )
 
   // Re-verifies the session with Supabase and refreshes the cookie if needed.
-  const { data: { user } } = await supabase.auth.getUser()
+  const { user, unavailable } = await verifyUser(supabase)
+
+  // Couldn't reach the auth server at all: say so, rather than pretending the person is signed out.
+  if (!user && unavailable && !PUBLIC_PATHS.some((p) => req.nextUrl.pathname.startsWith(p))) {
+    return new NextResponse('Temporarily unavailable. Please try again in a moment.', {
+      status: 503, headers: { 'Retry-After': '3', 'Cache-Control': 'no-store' },
+    })
+  }
   const isPublic = PUBLIC_PATHS.some((p) => req.nextUrl.pathname.startsWith(p))
 
   if (!user && !isPublic) {

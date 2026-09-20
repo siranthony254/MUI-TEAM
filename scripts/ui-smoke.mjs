@@ -40,7 +40,7 @@ async function get(path, cookie) {
   return { status: r.status, loc: r.headers.get('location'), bad }
 }
 
-const PAGES = [
+const PAGES = process.env.PAGES ? process.env.PAGES.split(',') : [
   '/', '/tasks', '/tasks/new', '/tasks?filter=delegated', '/projects', '/people', '/responsibilities', '/chat',
   '/calendar', '/calendar?scope=team', '/meetings', '/meetings/new', '/decisions', '/reports', '/resources',
   '/activity', '/notifications', '/account', '/more', '/analytics', '/announcements', '/director', '/admin', '/admin/onboarding', '/admin/campaigns',

@@ -2,12 +2,13 @@ import 'server-only'
 import { cache } from 'react'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { verifyUser } from '@/lib/supabase/verify'
 import type { TeamMember, TeamRole } from '@/lib/types'
 
 /** The signed-in team member, or null if signed out / not invited. */
 export const getMember = cache(async (): Promise<TeamMember | null> => {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { user } = await verifyUser(supabase)
   if (!user) return null
   const { data } = await supabase
     .from('team_members')

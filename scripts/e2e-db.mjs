@@ -238,7 +238,7 @@ async function main() {
 
   await t('director: sees org-wide tasks; an ordinary executive does not', async () => {
     if (!G) return
-    const other = noErr(await E2.client.from('tasks').insert({ title: `${P} elsewhere`, assigned_by: E2.id, assignee_id: D.id }).select('id').single()).id
+    const other = noErr(await E2.client.from('tasks').insert({ title: `${P} elsewhere`, assigned_by: E2.id, assignee_id: E2.id }).select('id').single()).id
     ok((noErr(await G.client.from('tasks').select('id').eq('id', other))).length === 1, 'director cannot see org-wide task')
     ok((noErr(await E.client.from('tasks').select('id').eq('id', other))).length === 0, 'plain executive sees a task outside their line')
   })
@@ -336,7 +336,17 @@ async function cleanup() {
     await svc.from('activity_log').delete().or(`summary.ilike.%${P}%`)
     await svc.from('activity_log').delete().in('actor_id', ids)
     await svc.from('reports').delete().in('author_id', ids)
-    for (const id of ids) await svc.auth.admin.deleteUser(id)
+    for (const id of ids) {
+      let r = await svc.auth.admin.deleteUser(id)
+      if (r.error) { await svc.from('team_members').delete().eq('id', id); r = await svc.auth.admin.deleteUser(id) }
+    }
+    // Sweep anything left from this run (or an earlier interrupted one).
+    const { data: stray } = await svc.auth.admin.listUsers({ perPage: 200 })
+    for (const u of stray.users.filter((x) => /^zz(test|ui)-.*@example\.com$/.test(x.email || ''))) {
+      await svc.from('team_members').delete().eq('id', u.id)
+      await svc.auth.admin.deleteUser(u.id)
+    }
+    await svc.from('team_members').delete().like('full_name', `${P}%`)
     if (created.dept) await svc.from('departments').delete().eq('id', created.dept)
     const left = (await svc.from('team_members').select('id').like('full_name', `${P}%`)).data.length
     const leftT = (await svc.from('tasks').select('id').like('title', `${P}%`)).data.length
