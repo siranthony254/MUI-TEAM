@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import { requireMember, isExecOrAbove } from '@/lib/auth'
 import { allowedTransitions } from '@/lib/tasks'
 import { deliverSoon } from '@/lib/notify/after'
+import { localInputToIso } from '@/lib/time'
 import type { Task, TaskStatus } from '@/lib/types'
 
 export interface FormState { error?: string }
@@ -22,7 +23,7 @@ function parseTaskForm(formData: FormData) {
     project_id: String(formData.get('project_id') ?? '') || null,
     assignee_id: String(formData.get('assignee_id') ?? '') || null,
     priority: PRIORITIES.includes(priority) ? priority : 'normal',
-    due_at: due ? new Date(due).toISOString() : null,
+    due_at: localInputToIso(due),
     requires_evidence: formData.get('requires_evidence') === 'on',
   }
 }

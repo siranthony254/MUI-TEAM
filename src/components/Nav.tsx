@@ -2,22 +2,15 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import {
-  LayoutDashboard, CheckSquare, FolderKanban, Users, Bell, Settings,
-} from 'lucide-react'
+import { Menu } from 'lucide-react'
+import { MOBILE_PRIMARY, visibleItems } from './nav-items'
 
-const ITEMS = [
-  { href: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/tasks', label: 'My Work', icon: CheckSquare },
-  { href: '/projects', label: 'Projects', icon: FolderKanban },
-  { href: '/people', label: 'People', icon: Users },
-  { href: '/notifications', label: 'Alerts', icon: Bell },
-]
-
-export function Nav({ isAdmin, unread }: { isAdmin: boolean; unread: number }) {
+export function Nav({ role, unread }: { role: 'super_admin' | 'executive' | 'member'; unread: number }) {
   const path = usePathname()
-  const items = isAdmin ? [...ITEMS, { href: '/admin', label: 'Admin', icon: Settings }] : ITEMS
+  const items = visibleItems(role)
   const active = (href: string) => (href === '/' ? path === '/' : path.startsWith(href))
+  const primary = items.filter((i) => MOBILE_PRIMARY.includes(i.href))
+  const moreActive = !primary.some((i) => active(i.href))
 
   return (
     <>
@@ -40,7 +33,7 @@ export function Nav({ isAdmin, unread }: { isAdmin: boolean; unread: number }) {
 
       {/* Mobile bottom bar */}
       <nav aria-label="Main" className="fixed inset-x-0 bottom-0 z-20 flex justify-around border-t border-white/10 bg-[#0D1F35] pb-[env(safe-area-inset-bottom)] md:hidden">
-        {items.slice(0, 5).map(({ href, label, icon: Icon }) => (
+        {primary.map(({ href, label, icon: Icon }) => (
           <Link key={href} href={href}
             className={`relative flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] ${
               active(href) ? 'text-amber-400' : 'text-white/60'
@@ -52,6 +45,13 @@ export function Nav({ isAdmin, unread }: { isAdmin: boolean; unread: number }) {
             )}
           </Link>
         ))}
+        <Link href="/more"
+          className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] ${
+            path === '/more' || moreActive ? 'text-amber-400' : 'text-white/60'
+          }`}>
+          <Menu size={20} aria-hidden />
+          More
+        </Link>
       </nav>
     </>
   )

@@ -79,3 +79,44 @@ export const STATUS_LABEL: Record<TaskStatus, string> = {
   completed: 'Completed',
   closed: 'Closed',
 }
+
+export interface Meeting {
+  id: string
+  title: string
+  starts_at: string
+  ends_at: string | null
+  location: string | null
+  agenda: string | null
+  minutes: string | null
+  status: 'scheduled' | 'held' | 'cancelled'
+  project_id: string | null
+  created_by: string | null
+}
+
+export interface Decision {
+  id: string
+  title: string
+  decision: string
+  rationale: string | null
+  decided_on: string
+  decided_by: string | null
+  status: 'active' | 'superseded' | 'reversed'
+  superseded_by: string | null
+  meeting_id: string | null
+  created_by: string | null
+}
+
+export interface Report {
+  id: string
+  author_id: string
+  department_id: string | null
+  period_start: string
+  period_end: string
+  activities: string | null
+  completed: string | null
+  challenges: string | null
+  metrics: string | null
+  recommendations: string | null
+  status: 'draft' | 'submitted'
+  submitted_at: string | null
+}

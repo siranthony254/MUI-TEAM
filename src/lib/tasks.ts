@@ -1,4 +1,5 @@
 import type { Task, TaskStatus, TeamMember } from '@/lib/types'
+import { dayKey, fmtDateTime } from '@/lib/time'
 
 export const PRIORITY_ORDER = { urgent: 0, high: 1, normal: 2, low: 3 } as const
 
@@ -8,8 +9,7 @@ export function isOverdue(t: Pick<Task, 'due_at' | 'status'>, now = Date.now()) 
 
 export function isDueToday(t: Pick<Task, 'due_at' | 'status'>, now = new Date()) {
   if (!t.due_at || ['completed', 'closed'].includes(t.status)) return false
-  const d = new Date(t.due_at)
-  return d.toDateString() === now.toDateString()
+  return dayKey(t.due_at) === dayKey(now)
 }
 
 export interface Transition {
@@ -56,8 +56,5 @@ export function allowedTransitions(task: Task, me: TeamMember): Transition[] {
 }
 
 export function fmtDue(iso: string | null) {
-  if (!iso) return 'No due date'
-  return new Date(iso).toLocaleString('en-KE', {
-    day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit',
-  })
+  return iso ? fmtDateTime(iso) : 'No due date'
 }

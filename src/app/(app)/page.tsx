@@ -3,12 +3,13 @@ import { requireMember, isExecOrAbove } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { isDueToday, isOverdue, fmtDue, PRIORITY_ORDER } from '@/lib/tasks'
 import type { Task } from '@/lib/types'
+import { fmtDateTime, nairobiHour } from '@/lib/time'
 import { Card, PageTitle, StatusBadge } from '@/components/ui'
 
 export const dynamic = 'force-dynamic'
 
 function greeting() {
-  const h = new Date().getHours()
+  const h = nairobiHour()
   return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'
 }
 
@@ -35,6 +36,14 @@ export default async function Dashboard() {
     .select('id', { count: 'exact', head: true })
     .eq('assigned_by', me.id)
     .in('status', ['submitted', 'under_review'])
+
+  const { data: nextMeetings } = await supabase
+    .from('meetings')
+    .select('id, title, starts_at')
+    .eq('status', 'scheduled')
+    .gte('starts_at', new Date().toISOString())
+    .order('starts_at', { ascending: true })
+    .limit(3)
 
   const focus = [...overdue, ...today]
     .sort((a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority])
@@ -70,6 +79,12 @@ export default async function Dashboard() {
         </Link>
       )}
 
+      {isExecOrAbove(me) && (
+        <Link href="/analytics" className="mt-3 block text-sm font-medium text-amber-700 hover:underline">
+          Open the command centre →
+        </Link>
+      )}
+
       <h2 className="mt-8 mb-3 text-sm font-semibold uppercase tracking-wide text-neutral-500">Needs your attention</h2>
       {focus.length === 0 ? (
         <Card><p className="text-sm text-neutral-600">Nothing overdue or due today. </p></Card>
@@ -89,6 +104,22 @@ export default async function Dashboard() {
             </Link>
           ))}
         </div>
+      )}
+
+      {(nextMeetings ?? []).length > 0 && (
+        <>
+          <h2 className="mt-8 mb-3 text-sm font-semibold uppercase tracking-wide text-neutral-500">Coming up</h2>
+          <div className="space-y-2">
+            {(nextMeetings ?? []).map((m) => (
+              <Link key={m.id} href={`/meetings/${m.id}`}>
+                <Card className="transition hover:border-amber-400">
+                  <p className="font-medium">{m.title}</p>
+                  <p className="text-xs text-neutral-500">{fmtDateTime(m.starts_at)}</p>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </>
       )}
 
       <Card className="mt-8">

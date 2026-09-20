@@ -18,7 +18,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex min-h-screen bg-neutral-50 text-neutral-900">
-      <Nav isAdmin={me.role === 'super_admin'} unread={count ?? 0} />
+      <Nav role={me.role} unread={count ?? 0} />
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center justify-between gap-3 border-b border-neutral-200 bg-white px-4 py-3">
           <div className="min-w-0">

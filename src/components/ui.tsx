@@ -47,3 +47,7 @@ export const inputClass =
   'mt-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-500'
 export const buttonClass =
   'rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-[#0D1F35] hover:bg-amber-400 disabled:opacity-60'
+
+export function SectionTitle({ children }: { children: React.ReactNode }) {
+  return <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-neutral-500">{children}</h2>
+}
