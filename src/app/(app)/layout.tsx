@@ -5,7 +5,6 @@ import { createClient } from '@/lib/supabase/server'
 import { signOut } from '@/app/login/actions'
 import { ROLE_LABEL } from '@/lib/types'
 import { Nav } from '@/components/Nav'
-import { PwaRegister } from '@/components/PwaRegister'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const me = await requireMember()
@@ -41,7 +40,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </header>
         <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 pb-24 md:pb-8">{children}</main>
       </div>
-      <PwaRegister />
     </div>
   )
 }

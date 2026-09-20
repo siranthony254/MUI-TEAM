@@ -6,6 +6,7 @@ import type { Task } from '@/lib/types'
 import { fmtDateTime, nairobiHour } from '@/lib/time'
 import { Card, PageTitle, StatusBadge } from '@/components/ui'
 import { markOnboardingDone } from './home-actions'
+import { InstallBanner } from '@/components/pwa/InstallApp'
 
 export const dynamic = 'force-dynamic'
 
@@ -85,6 +86,8 @@ export default async function Dashboard() {
       <PageTitle sub="What do you need to know and do right now?">
         {greeting()}, {me.full_name.split(' ')[0]}.
       </PageTitle>
+
+      <div className="mb-4"><InstallBanner /></div>
 
       {me.is_director && (
         <Link href="/director" className="mb-4 block rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950 transition hover:border-amber-400">

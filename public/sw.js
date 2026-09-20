@@ -1,11 +1,11 @@
 // MUI Team service worker.
 // Private, signed-in pages are never cached. Only the static shell assets are,
 // so the app installs and opens fast; an offline page covers lost connectivity.
-const CACHE = 'mui-team-static-v1'
+const CACHE = 'mui-team-static-v2'
 const OFFLINE_URL = '/offline.html'
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(CACHE).then((c) => c.addAll([OFFLINE_URL, '/icons/icon-192.png'])))
+  event.waitUntil(caches.open(CACHE).then((c) => c.addAll([OFFLINE_URL, '/icons/icon-192.png', '/icons/icon-512.png'])))
   self.skipWaiting()
 })
 

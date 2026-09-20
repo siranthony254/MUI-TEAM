@@ -1,4 +1,5 @@
 import { LoginForm } from './LoginForm'
+import { InstallBanner } from '@/components/pwa/InstallApp'
 
 export const metadata = { title: 'Sign in' }
 
@@ -20,6 +21,7 @@ export default async function LoginPage({
         )}
         <LoginForm />
       </div>
+      <div className="fixed inset-x-4 bottom-4 mx-auto max-w-sm"><InstallBanner tone="dark" /></div>
     </main>
   )
 }

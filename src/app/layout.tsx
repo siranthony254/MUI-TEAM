@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
+import { PwaBoot } from "@/components/pwa/PwaBoot";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,7 +14,7 @@ export const metadata: Metadata = {
   applicationName: "MUI Team",
   appleWebApp: { capable: true, title: "MUI Team", statusBarStyle: "black-translucent" },
   robots: { index: false, follow: false },
-  icons: { apple: "/icons/icon-192.png" },
+  icons: { apple: "/icons/apple-touch-icon.png" },
 };
 
 export const viewport: Viewport = {
@@ -24,7 +25,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${geistSans.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {children}
+        <PwaBoot />
+      </body>
     </html>
   );
 }
