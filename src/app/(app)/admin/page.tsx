@@ -5,6 +5,7 @@ import { channelEnabled } from '@/lib/notify/channels'
 import { fmtDateTime } from '@/lib/time'
 import { ROLE_LABEL, type TeamMember } from '@/lib/types'
 import { Card, PageTitle, SectionTitle, buttonClass, inputClass } from '@/components/ui'
+import { ServiceKeyNotice } from '@/components/ServiceKeyNotice'
 import { AddMemberForm } from './AddMemberForm'
 import { addDepartment } from './actions'
 
@@ -31,6 +32,7 @@ function Health({ ok, label, detail }: { ok: boolean | null; label: string; deta
 
 export default async function AdminHome() {
   const me = await requireRole('super_admin')
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return <ServiceKeyNotice />
   const admin = createAdminClient()
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
 
@@ -46,6 +48,8 @@ export default async function AdminHome() {
     admin.from('team_members').select('id', { count: 'exact', head: true }),
   ])
 
+  // A wrong key surfaces here as an API error; say so instead of failing with a blank server error.
+  if (members.error) return <ServiceKeyNotice detail={members.error.message} />
   const people = (members.data ?? []) as TeamMember[]
   const active = people.filter((m) => m.active)
   const run = lastRun.data as { ran_at: string; error: string | null; failed: number; reminders: number; spawned: number } | null

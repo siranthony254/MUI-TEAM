@@ -37,8 +37,14 @@ export async function createAnnouncement(_prev: AnnouncementState | undefined, f
   // Announcements set for "now" go out immediately; later ones are sent by the scheduler when due.
   const publishedNow = new Date(publishAt).getTime() <= Date.now() + 1000
   if (publishedNow) {
-    await createAdminClient().rpc('publish_due_announcements')
-    deliverSoon()
+    try {
+      await createAdminClient().rpc('publish_due_announcements')
+      deliverSoon()
+    } catch {
+      // The announcement is saved and visible; only the notifications need the server key.
+      revalidatePath('/announcements')
+      return { ok: 'Published, but the team could not be notified because SUPABASE_SERVICE_ROLE_KEY is missing on the server.' }
+    }
   }
   revalidatePath('/announcements')
   revalidatePath('/')

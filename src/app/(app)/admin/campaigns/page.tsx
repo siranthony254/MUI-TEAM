@@ -4,12 +4,14 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { fmtDateTime } from '@/lib/time'
 import type { Campaign } from '@/lib/types'
 import { Card, PageTitle, SectionTitle } from '@/components/ui'
+import { ServiceKeyNotice } from '@/components/ServiceKeyNotice'
 import { CampaignForm } from './CampaignForm'
 
 export const dynamic = 'force-dynamic'
 
 export default async function Campaigns() {
   const me = await requireAdminOrDirector()
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return <ServiceKeyNotice />
   const admin = createAdminClient()
   const [{ data: departments }, { data: members }, { data: sent }] = await Promise.all([
     admin.from('departments').select('id, name').order('name'),

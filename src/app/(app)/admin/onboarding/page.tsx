@@ -3,6 +3,7 @@ import { requireRole } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { OnboardingItem } from '@/lib/types'
 import { Card, PageTitle, SectionTitle } from '@/components/ui'
+import { ServiceKeyNotice } from '@/components/ServiceKeyNotice'
 import { AddStepForm, WelcomeForm } from './OnboardingForms'
 import { removeOnboardingItem } from './actions'
 
@@ -10,12 +11,14 @@ export const dynamic = 'force-dynamic'
 
 export default async function OnboardingAdmin() {
   await requireRole('super_admin')
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return <ServiceKeyNotice />
   const admin = createAdminClient()
-  const [{ data: items }, { data: welcome }, { data: progress }] = await Promise.all([
+  const [items, { data: welcome }, { data: progress }] = await Promise.all([
     admin.from('onboarding_items').select('*').order('position'),
     admin.from('org_settings').select('value').eq('key', 'welcome_message').maybeSingle(),
     admin.from('member_onboarding').select('item_id, done_at'),
   ])
+  if (items.error) return <ServiceKeyNotice detail={items.error.message} />
   const stat = (id: string) => {
     const rows = (progress ?? []).filter((p) => p.item_id === id)
     return `${rows.filter((r) => r.done_at).length}/${rows.length} done`
@@ -33,10 +36,10 @@ export default async function OnboardingAdmin() {
       </Card>
 
       <Card className="mt-4">
-        <SectionTitle>Checklist ({(items ?? []).length} steps)</SectionTitle>
-        {(items ?? []).length === 0 ? <p className="text-sm text-neutral-500">No steps yet.</p> : (
+        <SectionTitle>Checklist ({(items.data ?? []).length} steps)</SectionTitle>
+        {(items.data ?? []).length === 0 ? <p className="text-sm text-neutral-500">No steps yet.</p> : (
           <ul className="divide-y divide-neutral-100">
-            {((items ?? []) as OnboardingItem[]).map((i) => (
+            {((items.data ?? []) as OnboardingItem[]).map((i) => (
               <li key={i.id} className="flex items-start justify-between gap-3 py-2 text-sm">
                 <span className="min-w-0">
                   <span className="block font-medium">{i.title}</span>
