@@ -103,8 +103,9 @@ export async function reassignTask(_prev: FormState | undefined, fd: FormData): 
   }
   if (to === task.assignee_id) return { error: 'They already have this task.' }
 
+  if (!isExecOrAbove(me)) return { error: 'Only executives can assign work to someone else.' }
   const isReviewer = task.assigned_by === me.id || me.role === 'super_admin'
-  const delegating = task.assignee_id === me.id && isExecOrAbove(me)
+  const delegating = task.assignee_id === me.id
   if (!isReviewer && !delegating) return { error: 'You can\'t hand this task on.' }
 
   const due = localInputToIso(String(fd.get('due_at') ?? ''))

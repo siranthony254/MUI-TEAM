@@ -41,7 +41,7 @@ export default async function TaskPage({
   const isReviewer = task.assigned_by === me.id || me.role === 'super_admin'
   const openForHandOn = ['not_started', 'in_progress', 'needs_revision'].includes(task.status)
   const delegating = task.assignee_id === me.id && isExecOrAbove(me)
-  const canHandOn = openForHandOn && (delegating || isReviewer)
+  const canHandOn = openForHandOn && isExecOrAbove(me) && (delegating || isReviewer)
   const canAttach = isReviewer || task.assignee_id === me.id
   const delegated = !!task.delegated_by
 
