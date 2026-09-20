@@ -57,3 +57,15 @@ Run migration `20260920000004_chat_calendar_resources.sql`. It also creates the 
 - **Activity log** is structured (field, before, after) and covers tasks, projects, meetings, decisions, reports, files, and admin actions.
 - **Admin**: dashboard with system health, reset access, deactivate with automatic hand-over of open work, reactivate.
 - **Scheduler run log**: each `/api/cron/dispatch` run is recorded so the admin dashboard can tell you if reminders stopped.
+
+## Deploying (Vercel)
+
+1. Push this repo to GitHub, then import it in Vercel (framework: Next.js, root directory: the repo root).
+2. Environment variables (Project Settings → Environment Variables), all environments:
+   `NEXT_PUBLIC_SUPABASE_URL` (just `https://<ref>.supabase.co`, no path), `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
+   `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_APP_URL` (the deployed URL), `CRON_SECRET`,
+   `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, and optionally `RESEND_API_KEY`, `EMAIL_FROM`,
+   `AT_USERNAME`, `AT_API_KEY`, `AT_SENDER_ID`.
+3. Supabase → Authentication → URL Configuration: set the Site URL to the deployed URL.
+4. Run the scheduler snippet at the bottom of migration 2 with the deployed URL and `CRON_SECRET`.
+5. Optional: give it a subdomain, e.g. `team.micdupinitiative.site`.

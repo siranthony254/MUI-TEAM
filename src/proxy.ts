@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
+import { supabaseUrl } from '@/lib/supabase/url'
 
 // /api/cron authenticates itself with CRON_SECRET (no user session).
 const PUBLIC_PATHS = ['/login', '/api/cron']
@@ -8,7 +9,7 @@ export default async function proxy(req: NextRequest) {
   const res = NextResponse.next({ request: req })
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
+    supabaseUrl(),
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key',
     {
       cookies: {
