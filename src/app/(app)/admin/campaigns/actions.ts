@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { requireAdminOrDirector } from '@/lib/auth'
+import { requireCap } from '@/lib/permissions'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { deliverSoon } from '@/lib/notify/after'
 
@@ -14,7 +14,7 @@ const CHANNELS = ['email', 'push', 'sms']
  * and goes out over the channels picked (each person's own opt-ins still apply).
  */
 export async function sendCampaign(_prev: CampaignState | undefined, fd: FormData): Promise<CampaignState> {
-  const me = await requireAdminOrDirector()
+  const me = await requireCap('send_campaign')
   const title = String(fd.get('title') ?? '').trim()
   const body = String(fd.get('body') ?? '').trim()
   const audience = String(fd.get('audience') ?? 'all')

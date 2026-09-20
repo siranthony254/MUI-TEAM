@@ -1,7 +1,7 @@
-export type TeamRole = 'super_admin' | 'executive' | 'member'
+export type TeamRole = 'super_admin' | 'executive' | 'member' | 'guest'
 export type TaskStatus =
   | 'not_started' | 'in_progress' | 'submitted' | 'under_review'
-  | 'needs_revision' | 'completed' | 'closed'
+  | 'needs_revision' | 'blocked' | 'completed' | 'closed'
 export type TaskPriority = 'low' | 'normal' | 'high' | 'urgent'
 
 export interface TeamMember {
@@ -22,6 +22,11 @@ export interface TeamMember {
   notify_push: boolean
   notify_sms: boolean
   is_director: boolean
+  preferred_name: string | null
+  avatar_url: string | null
+  profile_completed_at: string | null
+  /** Departments this person directs (filled in by getMember). */
+  directed_departments?: string[]
   admin_until: string | null
   admin_granted_by: string | null
   role_before_admin: TeamRole | null
@@ -58,6 +63,8 @@ export interface Task {
   delegated_by: string | null
   delegated_at: string | null
   delegation_note: string | null
+  blocked_reason: string | null
+  blocked_at: string | null
 }
 
 export interface Project {
@@ -85,6 +92,7 @@ export const ROLE_LABEL: Record<TeamRole, string> = {
   super_admin: 'System Admin',
   executive: 'Executive',
   member: 'Team Member',
+  guest: 'Guest',
 }
 
 export const STATUS_LABEL: Record<TaskStatus, string> = {
@@ -93,6 +101,7 @@ export const STATUS_LABEL: Record<TaskStatus, string> = {
   submitted: 'Submitted',
   under_review: 'Under review',
   needs_revision: 'Needs revision',
+  blocked: 'Blocked',
   completed: 'Completed',
   closed: 'Closed',
 }
@@ -145,7 +154,7 @@ export interface Report {
 export interface Channel {
   id: string
   name: string
-  kind: 'general' | 'executive' | 'department' | 'project' | 'group'
+  kind: 'general' | 'executive' | 'department' | 'project' | 'group' | 'direct'
   department_id: string | null
   project_id: string | null
   created_by: string | null
@@ -223,7 +232,7 @@ export interface ActivityEntry {
   created_at: string
 }
 
-export interface Department { id: string; name: string; description: string | null }
+export interface Department { id: string; name: string; description: string | null; director_id: string | null }
 
 export interface Announcement {
   id: string
@@ -257,4 +266,48 @@ export interface Campaign {
   recipient_count: number
   sent_by: string | null
   created_at: string
+}
+
+export interface TaskComment { id: string; task_id: string; author_id: string; body: string; created_at: string }
+
+export interface ExtensionRequest {
+  id: string
+  task_id: string
+  requested_by: string
+  reason: string
+  requested_due: string
+  status: 'pending' | 'approved' | 'denied'
+  decided_by: string | null
+  decided_at: string | null
+  decision_note: string | null
+  created_at: string
+}
+
+export interface Episode {
+  id: string
+  number: number
+  title: string
+  question: string | null
+  guest_name: string | null
+  guest_notes: string | null
+  project_id: string | null
+  status: 'planning' | 'recording' | 'post_production' | 'published' | 'archived'
+  recording_at: string | null
+  publish_on: string | null
+  created_by: string | null
+}
+
+export interface EpisodeTemplateItem {
+  id: string
+  position: number
+  title: string
+  offset_days: number
+  stage: 'research' | 'guest' | 'questions' | 'recording' | 'editing' | 'publishing' | 'archive'
+  active: boolean
+}
+
+export const EPISODE_STAGES = ['research', 'guest', 'questions', 'recording', 'editing', 'publishing', 'archive'] as const
+export const EPISODE_STAGE_LABEL: Record<(typeof EPISODE_STAGES)[number], string> = {
+  research: 'Research', guest: 'Guest', questions: 'Questions', recording: 'Recording',
+  editing: 'Editing', publishing: 'Publishing', archive: 'Archive',
 }

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { requireMember, isExecOrAbove } from '@/lib/auth'
+import { can } from '@/lib/permissions'
 import { createClient } from '@/lib/supabase/server'
 import { fmtDay, fmtDateTime, dayKey } from '@/lib/time'
 import { fmtDue, isOverdue } from '@/lib/tasks'
@@ -56,7 +57,7 @@ export default async function ProjectPage({
   const load = (loadRows ?? []) as Load[]
   const explicit = new Set((pmRows ?? []).map((r) => r.member_id))
   const teamIds = [...new Set([...(project.owner_id ? [project.owner_id] : []), ...explicit, ...load.map((l) => l.member_id)])]
-  const exec = isExecOrAbove(me)
+  const exec = (await can(me, 'create_project')) && (isExecOrAbove(me) || project.owner_id === me.id)
 
   const tabLink = (t: Tab, label: string) => (
     <Link key={t} href={`/projects/${id}?tab=${t}`}

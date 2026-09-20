@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { requireMember, isExecOrAbove } from '@/lib/auth'
+import { can } from '@/lib/permissions'
 import { createClient } from '@/lib/supabase/server'
 import { fmtDay, monthRange, parseMonthParam, monthParam, shiftMonth, TZ } from '@/lib/time'
 import type { Report } from '@/lib/types'
@@ -48,8 +49,8 @@ export default async function Reports({ searchParams }: { searchParams: Promise<
       <Card>
         <SectionTitle>Write a report</SectionTitle>
         <NewReportForm
-          canDepartment={exec}
-          departments={(departments ?? []).map((d) => ({ id: d.id, label: d.name }))}
+          canDepartment={await can(me, 'submit_department_report')}
+          departments={(departments ?? []).filter((d) => exec || (me.directed_departments ?? []).includes(d.id)).map((d) => ({ id: d.id, label: d.name }))}
           defaultDepartment={me.department_id ?? ''}
           start={month.start}
           end={month.end}

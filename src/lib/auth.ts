@@ -16,7 +16,9 @@ export const getMember = cache(async (): Promise<TeamMember | null> => {
     .eq('id', user.id)
     .eq('active', true)
     .maybeSingle()
-  return (data as TeamMember | null) ?? null
+  if (!data) return null
+  const { data: directed } = await supabase.from('departments').select('id').eq('director_id', user.id)
+  return { ...(data as TeamMember), directed_departments: (directed ?? []).map((d) => d.id) }
 })
 
 export async function requireMember(): Promise<TeamMember> {

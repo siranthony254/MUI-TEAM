@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { requireAdminOrDirector } from '@/lib/auth'
+import { requireCap } from '@/lib/permissions'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { fmtDateTime } from '@/lib/time'
 import type { Campaign } from '@/lib/types'
@@ -10,7 +10,7 @@ import { CampaignForm } from './CampaignForm'
 export const dynamic = 'force-dynamic'
 
 export default async function Campaigns() {
-  const me = await requireAdminOrDirector()
+  const me = await requireCap('send_campaign')
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return <ServiceKeyNotice />
   const admin = createAdminClient()
   const [{ data: departments }, { data: members }, { data: sent }] = await Promise.all([

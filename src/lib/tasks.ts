@@ -34,6 +34,8 @@ export function allowedTransitions(task: Task, me: TeamMember): Transition[] {
   if (isAssignee) {
     if (task.status === 'not_started' || task.status === 'needs_revision')
       out.push({ to: 'in_progress', label: 'Start work', tone: 'primary' })
+    if (task.status === 'blocked')
+      out.push({ to: 'in_progress', label: 'Unblock — resume work', tone: 'primary' })
     if (task.status === 'in_progress')
       out.push({
         // Work that needs no sign-off (or that you assigned yourself) can be completed directly.
@@ -42,8 +44,12 @@ export function allowedTransitions(task: Task, me: TeamMember): Transition[] {
         needsNote: task.requires_evidence,
         tone: 'primary',
       })
+    if (task.status === 'in_progress')
+      out.push({ to: 'blocked', label: "I'm blocked", needsNote: true, tone: 'danger' })
   }
   if (isReviewer && !(isAssignee && task.assigned_by === me.id && task.status === 'in_progress')) {
+    if (task.status === 'blocked' && !isAssignee)
+      out.push({ to: 'in_progress', label: 'Mark unblocked', tone: 'neutral' })
     if (task.status === 'submitted')
       out.push({ to: 'under_review', label: 'Start review', tone: 'neutral' })
     if (task.status === 'submitted' || task.status === 'under_review') {

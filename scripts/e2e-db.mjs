@@ -320,6 +320,150 @@ async function main() {
     await svc.from('campaigns').delete().eq('id', c.id)
   })
 
+  // ---- migrations 8-10: comments, blocked, extensions, meeting reminders, departments, guests, DMs, episodes ----
+  const dept2 = (await svc.from('departments').insert({ name: `${P} Dept2 ${stamp}` }).select('id').single()).data.id
+  created.dept2 = dept2
+
+  await t('comments: participants comment and the other side is told; outsiders cannot', async () => {
+    const id = noErr(await E.client.from('tasks').insert({ title: `${P} discuss`, assigned_by: E.id, assignee_id: M.id, due_at: daysFromNow(5) }).select('id').single()).id
+    noErr(await M.client.from('task_comments').insert({ task_id: id, author_id: M.id, body: 'question about scope' }))
+    ok((await notes(E, 'task_comment')).length >= 1, 'assigner not notified of the comment')
+    isErr(await D.client.from('task_comments').insert({ task_id: id, author_id: D.id, body: 'hi' }), 'outsider commented')
+    ok((noErr(await D.client.from('task_comments').select('id').eq('task_id', id))).length === 0, 'outsider reads comments')
+  })
+
+  await t('blocked: assignee can block and unblock; assigner is told; reminders skip blocked work', async () => {
+    const id = noErr(await E.client.from('tasks').insert({ title: `${P} blockable`, assigned_by: E.id, assignee_id: M.id, due_at: daysFromNow(2) }).select('id').single()).id
+    noErr(await M.client.from('tasks').update({ status: 'in_progress' }).eq('id', id))
+    noErr(await M.client.from('tasks').update({ status: 'blocked', blocked_reason: 'waiting on the venue' }).eq('id', id))
+    ok((await notes(E, 'task_blocked')).length >= 1, 'assigner not told about the block')
+    const row = (await svc.from('tasks').select('status, blocked_at').eq('id', id).single()).data
+    ok(row.status === 'blocked' && row.blocked_at, 'blocked state not recorded')
+    await svc.rpc('generate_task_reminders')
+    ok((await svc.from('notifications').select('id').like('dedupe_key', `reminder:${id}:%`)).data.length === 0, 'reminders were sent for a blocked task')
+    noErr(await M.client.from('tasks').update({ status: 'in_progress', blocked_reason: null }).eq('id', id))
+  })
+
+  await t('extensions: assignee asks, assigner decides and the deadline moves; assignees cannot move deadlines', async () => {
+    const id = noErr(await E.client.from('tasks').insert({ title: `${P} extendable`, assigned_by: E.id, assignee_id: M.id, due_at: daysFromNow(2) }).select('id').single()).id
+    const newDue = daysFromNow(6)
+    isErr(await M.client.from('tasks').update({ due_at: newDue }).eq('id', id), 'assignee moved their own deadline')
+    const req = noErr(await M.client.from('extension_requests').insert({ task_id: id, requested_by: M.id, reason: 'need more time', requested_due: newDue }).select('id').single())
+    ok((await notes(E, 'extension_requested')).length >= 1, 'assigner not notified')
+    const own = await M.client.from('extension_requests').update({ status: 'approved', decided_by: M.id }).eq('id', req.id).select('id')
+    ok(!own.error && own.data.length === 0, 'assignee approved their own request')
+    noErr(await E.client.from('extension_requests').update({ status: 'approved', decided_by: E.id, decided_at: new Date().toISOString() }).eq('id', req.id))
+    noErr(await E.client.from('tasks').update({ due_at: newDue }).eq('id', id))
+    ok((await notes(M, 'extension_approved')).length >= 1, 'requester not told')
+    const due = (await svc.from('tasks').select('due_at').eq('id', id).single()).data.due_at
+    ok(Math.abs(new Date(due) - new Date(newDue)) < 1000, 'deadline did not move')
+  })
+
+  await t('a delegator can still set a deadline for the person they delegate to', async () => {
+    const id = noErr(await E2.client.from('tasks').insert({ title: `${P} delegate-due`, assigned_by: E2.id, assignee_id: E.id, due_at: daysFromNow(3) }).select('id').single()).id
+    noErr(await E.client.from('tasks').update({ assignee_id: M.id, original_assignee_id: E.id, delegated_by: E.id, delegated_at: new Date().toISOString(), due_at: daysFromNow(2) }).eq('id', id))
+  })
+
+  await t('meeting reminders: starting-soon once, and a minutes prompt after it ends', async () => {
+    const soon = noErr(await E.client.from('meetings').insert({ title: `${P} soon`, starts_at: new Date(Date.now() + 10 * 60000).toISOString(), created_by: E.id }).select('id').single()).id
+    noErr(await E.client.from('meeting_attendees').insert({ meeting_id: soon, member_id: M.id }))
+    noErr(await E.client.from('meetings').insert({ title: `${P} over`, starts_at: new Date(Date.now() - 3 * 3600000).toISOString(), ends_at: new Date(Date.now() - 2 * 3600000).toISOString(), created_by: E.id }))
+    noErr(await svc.rpc('generate_meeting_reminders'))
+    const c1 = (await notes(M, 'meeting_soon')).length
+    ok(c1 === 1, `expected one starting-soon notice, got ${c1}`)
+    ok((await notes(E, 'minutes_prompt')).length >= 1, 'no minutes prompt')
+    await svc.rpc('generate_meeting_reminders')
+    ok((await notes(M, 'meeting_soon')).length === 1, 'starting-soon notice repeated')
+  })
+
+  await t('reminder schedule follows organisation settings (1-hour reminder)', async () => {
+    await svc.from('org_settings').upsert({ key: 'reminder_1h', value: 'true' })
+    try {
+      const id = noErr(await E.client.from('tasks').insert({ title: `${P} hourly`, assigned_by: E.id, assignee_id: D.id, due_at: new Date(Date.now() + 30 * 60000).toISOString() }).select('id').single()).id
+      await svc.rpc('generate_task_reminders')
+      const got = (await svc.from('notifications').select('kind').eq('recipient_id', D.id).like('dedupe_key', `reminder:${id}:due_1h:%`)).data
+      ok(got.length === 1, 'no 1-hour reminder although the setting is on')
+    } finally {
+      await svc.from('org_settings').delete().eq('key', 'reminder_1h')
+    }
+  })
+
+  await t('notification preferences are private to each person', async () => {
+    noErr(await M.client.from('notification_prefs').upsert({ member_id: M.id, event_group: 'mention', in_app: true, email: false, push: false, sms: false }))
+    ok((noErr(await D.client.from('notification_prefs').select('member_id').eq('member_id', M.id))).length === 0, 'peer reads preferences')
+    isErr(await D.client.from('notification_prefs').insert({ member_id: M.id, event_group: 'meeting' }), 'peer wrote preferences')
+  })
+
+  await t('department director: sees and assigns within their own department only', async () => {
+    const DD = await mkUser('deptdir', 'member', { department_id: dept2 })
+    const S2 = await mkUser('deptstaff', 'member', { department_id: dept2 })
+    await svc.from('departments').update({ director_id: DD.id }).eq('id', dept2)
+    const inDept = noErr(await E.client.from('tasks').insert({ title: `${P} in-dept`, assigned_by: E.id, assignee_id: S2.id }).select('id').single()).id
+    ok((noErr(await DD.client.from('tasks').select('id').eq('id', inDept))).length === 1, 'director cannot see their department\'s task')
+    ok((noErr(await DD.client.from('tasks').select('id').eq('id', task1))).length === 0, 'director sees another department\'s task')
+    noErr(await DD.client.from('tasks').insert({ title: `${P} dd-assigns`, assigned_by: DD.id, assignee_id: S2.id }))
+    isErr(await DD.client.from('tasks').insert({ title: `${P} dd-outside`, assigned_by: DD.id, assignee_id: M.id }), 'director assigned outside their department')
+    const start = new Date().toISOString().slice(0, 8) + '01'
+    noErr(await DD.client.from('reports').insert({ author_id: DD.id, kind: 'department', department_id: dept2, period_start: start, period_end: start }))
+    isErr(await DD.client.from('reports').insert({ author_id: DD.id, kind: 'department', department_id: created.dept, period_start: start, period_end: start }), 'director filed for a department they do not lead')
+    const load = noErr(await DD.client.rpc('department_member_load', { did: dept2 }))
+    ok(load.length >= 2, 'director cannot see their department\'s workload')
+    ok(noErr(await M.client.rpc('department_member_load', { did: dept2 })).length === 0, 'a member sees another department\'s workload')
+  })
+
+  await t('permission matrix: readable by everyone, writable by no one from the client', async () => {
+    ok((noErr(await M.client.from('role_permissions').select('level'))).length >= 30, 'matrix missing or not seeded')
+    const w = await M.client.from('role_permissions').update({ allowed: true }).eq('level', 'member').select('level')
+    ok(!w.error && w.data.length === 0, 'member edited the matrix')
+  })
+
+  await t('guest: sees only their own work; no directory, general chat, decisions or internal files', async () => {
+    const Gu = await mkUser('guest', 'guest')
+    const gt = noErr(await E.client.from('tasks').insert({ title: `${P} guesttask`, assigned_by: E.id, assignee_id: Gu.id }).select('id').single()).id
+    const seen = noErr(await Gu.client.from('tasks').select('id'))
+    ok(seen.length === 1 && seen[0].id === gt, 'guest sees tasks other than their own')
+    const people = noErr(await Gu.client.from('team_members').select('id')).map((r) => r.id)
+    ok(people.every((x) => x === Gu.id || x === E.id), 'guest can read the directory')
+    ok((noErr(await Gu.client.from('channels').select('id').eq('kind', 'general'))).length === 0, 'guest sees #General')
+    ok((noErr(await Gu.client.from('decisions').select('id'))).length === 0, 'guest reads decisions')
+    ok((noErr(await Gu.client.from('member_onboarding').select('item_id'))).length === 0, 'guest got the onboarding checklist')
+    isErr(await Gu.client.from('tasks').insert({ title: `${P} guest-own`, assigned_by: Gu.id, assignee_id: Gu.id }), 'guest created a task')
+    isErr(await Gu.client.from('messages').insert({ channel_id: (await svc.from('channels').select('id').eq('kind', 'general').single()).data.id, author_id: Gu.id, body: `${P} hi` }), 'guest posted in #General')
+  })
+
+  await t('direct messages: private to two people, the other side is told, hidden even from admins', async () => {
+    const id1 = noErr(await M.client.rpc('get_or_create_dm', { other: D.id }))
+    const id2 = noErr(await D.client.rpc('get_or_create_dm', { other: M.id }))
+    ok(id1 === id2, 'two conversations were created for one pair')
+    noErr(await M.client.from('messages').insert({ channel_id: id1, author_id: M.id, body: `${P} psst` }))
+    ok((await notes(D, 'dm')).length === 1, 'recipient not notified')
+    const X = await mkUser('nosy', 'member')
+    ok((noErr(await X.client.from('messages').select('id').eq('channel_id', id1))).length === 0, 'a third person reads a DM')
+    const SA = await mkUser('nosyadmin', 'super_admin')
+    ok((noErr(await SA.client.from('messages').select('id').eq('channel_id', id1))).length === 0, 'a system admin reads a DM')
+    if (G) ok((noErr(await G.client.from('messages').select('id').eq('channel_id', id1))).length === 0, 'the Director reads a DM')
+    isErr(await M.client.rpc('get_or_create_dm', { other: M.id }), 'DM with yourself allowed')
+  })
+
+  await t('episodes: executives create, everyone reads, members cannot; the checklist is seeded', async () => {
+    ok((await svc.from('episode_template_items').select('id')).data.length >= 10, 'standard checklist not seeded')
+    const ep = noErr(await E.client.from('episodes').insert({ title: `${P} episode`, created_by: E.id }).select('id, number').single())
+    ok(Number.isInteger(ep.number), 'no episode number')
+    ok((noErr(await M.client.from('episodes').select('id').eq('id', ep.id))).length === 1, 'member cannot read episodes')
+    isErr(await M.client.from('episodes').insert({ title: `${P} nope` }), 'member created an episode')
+    noErr(await E.client.from('tasks').insert({ title: `${P} ep task`, assigned_by: E.id, assignee_id: M.id, episode_id: ep.id, episode_stage: 'research' }))
+  })
+
+  await t('profile: members update only their own details through the profile function', async () => {
+    const N = await mkUser('profiler', 'member')
+    ok((await svc.from('team_members').select('profile_completed_at').eq('id', N.id).single()).data.profile_completed_at === null, 'a new member should start without a completed profile')
+    noErr(await N.client.rpc('update_my_profile', { p_preferred_name: 'Pro', p_avatar_url: '', p_phone: '', p_complete: true }))
+    const row = (await svc.from('team_members').select('preferred_name, profile_completed_at').eq('id', N.id).single()).data
+    ok(row.preferred_name === 'Pro' && row.profile_completed_at, 'profile not saved')
+    const direct = await N.client.from('team_members').update({ role: 'super_admin' }).eq('id', N.id).select('id')
+    ok(!direct.error && direct.data.length === 0, 'member updated their own role directly')
+  })
+
 }
 
 async function cleanup() {
@@ -329,6 +473,12 @@ async function cleanup() {
     await svc.from('tasks').delete().like('title', `${P}%`)
     await svc.from('decisions').delete().like('title', `${P}%`)
     await svc.from('announcements').delete().like('title', `${P}%`)
+    await svc.from('episodes').delete().like('title', `${P}%`)
+    await svc.from('resources').delete().like('title', `${P}%`)
+    // Private DM channels have no owner once their members are gone; remove them explicitly.
+    const { data: dmRows } = await svc.from('channel_members').select('channel_id').in('member_id', ids)
+    const dmIds = [...new Set((dmRows ?? []).map((r) => r.channel_id))]
+    if (dmIds.length) await svc.from('channels').delete().in('id', dmIds).eq('kind', 'direct')
     await svc.from('campaigns').delete().like('title', `${P}%`)
     await svc.from('meetings').delete().like('title', `${P}%`)
     await svc.from('messages').delete().like('body', `${P}%`)
@@ -348,6 +498,7 @@ async function cleanup() {
     }
     await svc.from('team_members').delete().like('full_name', `${P}%`)
     if (created.dept) await svc.from('departments').delete().eq('id', created.dept)
+    if (created.dept2) await svc.from('departments').delete().eq('id', created.dept2)
     const left = (await svc.from('team_members').select('id').like('full_name', `${P}%`)).data.length
     const leftT = (await svc.from('tasks').select('id').like('title', `${P}%`)).data.length
     console.log(`cleanup done — leftover test members: ${left}, tasks: ${leftT}`)

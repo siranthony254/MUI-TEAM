@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Plus } from 'lucide-react'
-import { requireMember, isExecOrAbove } from '@/lib/auth'
+import { requireMember } from '@/lib/auth'
+import { can } from '@/lib/permissions'
 import { createClient } from '@/lib/supabase/server'
 import { fmtDateTime } from '@/lib/time'
 import type { Meeting } from '@/lib/types'
@@ -41,7 +42,7 @@ export default async function Meetings() {
     <>
       <div className="flex items-start justify-between gap-3">
         <PageTitle sub="Agendas, minutes and the actions that come out of them.">Meetings</PageTitle>
-        {isExecOrAbove(me) && (
+        {(await can(me, 'schedule_meeting')) && (
           <Link href="/meetings/new"
             className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-amber-500 px-3 py-1.5 text-sm font-semibold text-[#0D1F35] hover:bg-amber-400">
             <Plus size={16} aria-hidden /> Schedule

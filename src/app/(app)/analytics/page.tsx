@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { requireRole } from '@/lib/auth'
+import { requireCap } from '@/lib/permissions'
 import { createClient } from '@/lib/supabase/server'
 import { computeAnalytics, reportingLine } from '@/lib/analytics'
 import { fmtDay, monthRange } from '@/lib/time'
@@ -28,7 +28,7 @@ function Bar({ pct }: { pct: number | null }) {
 }
 
 export default async function Analytics() {
-  const me = await requireRole('super_admin', 'executive')
+  const me = await requireCap('view_analytics')
   const supabase = await createClient()
   const now = Date.now()
   const month = monthRange()

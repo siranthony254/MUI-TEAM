@@ -6,6 +6,8 @@ import { createClient } from '@/lib/supabase/server'
 import { requireMember, isExecOrAbove } from '@/lib/auth'
 import { deliverSoon } from '@/lib/notify/after'
 import { localInputToIso } from '@/lib/time'
+import { can, dbFor } from '@/lib/permissions'
+
 
 export interface MeetingState { error?: string; ok?: string }
 
@@ -13,7 +15,7 @@ const text = (fd: FormData, k: string) => String(fd.get(k) ?? '').trim() || null
 
 export async function createMeeting(_prev: MeetingState | undefined, fd: FormData): Promise<MeetingState> {
   const me = await requireMember()
-  if (!isExecOrAbove(me)) return { error: 'Only executives can schedule meetings.' }
+  if (!(await can(me, 'schedule_meeting'))) return { error: "You don't have permission to schedule meetings." }
 
   const title = text(fd, 'title')
   const starts_at = localInputToIso(String(fd.get('starts_at') ?? ''))
@@ -22,7 +24,7 @@ export async function createMeeting(_prev: MeetingState | undefined, fd: FormDat
   if (!starts_at) return { error: 'Choose when it starts.' }
   if (ends_at && ends_at <= starts_at) return { error: 'The end time must be after the start.' }
 
-  const supabase = await createClient()
+  const supabase = await dbFor(me)
   const { data: meeting, error } = await supabase
     .from('meetings')
     .insert({
@@ -53,12 +55,15 @@ export async function createMeeting(_prev: MeetingState | undefined, fd: FormDat
 
 /** Save minutes, status and attendance in one go. */
 export async function saveMeetingOutcome(_prev: MeetingState | undefined, fd: FormData): Promise<MeetingState> {
-  await requireMember()
+  const me = await requireMember()
   const id = String(fd.get('id') ?? '')
   const status = String(fd.get('status') ?? 'scheduled')
   if (!['scheduled', 'held', 'cancelled'].includes(status)) return { error: 'Invalid status.' }
 
-  const supabase = await createClient()
+  const own = await createClient()
+  const { data: mt } = await own.from('meetings').select('created_by').eq('id', id).maybeSingle()
+  if (!mt || (mt.created_by !== me.id && me.role !== 'super_admin')) return { error: 'Only the organiser can update this meeting.' }
+  const supabase = await dbFor(me)
   const { data: updated, error } = await supabase
     .from('meetings')
     .update({ minutes: text(fd, 'minutes'), status })
@@ -86,12 +91,12 @@ export async function saveMeetingOutcome(_prev: MeetingState | undefined, fd: Fo
 /** A decision taken in a meeting goes straight into the register. */
 export async function recordDecision(_prev: MeetingState | undefined, fd: FormData): Promise<MeetingState> {
   const me = await requireMember()
-  if (!isExecOrAbove(me)) return { error: 'Only executives can record decisions.' }
+  if (!(await can(me, 'record_decision'))) return { error: "You don't have permission to record decisions." }
   const title = text(fd, 'title')
   const decision = text(fd, 'decision')
   if (!title || !decision) return { error: 'A decision needs a title and the decision itself.' }
 
-  const supabase = await createClient()
+  const supabase = await dbFor(me)
   const meetingId = text(fd, 'meeting_id')
   const { data: meeting } = meetingId
     ? await supabase.from('meetings').select('project_id').eq('id', meetingId).maybeSingle()
@@ -115,7 +120,7 @@ export async function recordDecision(_prev: MeetingState | undefined, fd: FormDa
 /** An action item is a normal task that remembers which meeting it came from. */
 export async function addActionItem(_prev: MeetingState | undefined, fd: FormData): Promise<MeetingState> {
   const me = await requireMember()
-  if (!isExecOrAbove(me)) return { error: 'Only executives can assign action items.' }
+  if (!(await can(me, 'assign_tasks'))) return { error: "You don't have permission to assign action items." }
   const meetingId = String(fd.get('meeting_id') ?? '')
   const title = text(fd, 'title')
   const assignee = text(fd, 'assignee_id')

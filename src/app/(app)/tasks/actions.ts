@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { requireMember, isExecOrAbove } from '@/lib/auth'
 import { allowedTransitions } from '@/lib/tasks'
 import { deliverSoon } from '@/lib/notify/after'
+import { can } from '@/lib/permissions'
 import { localInputToIso } from '@/lib/time'
 import type { Task, TaskStatus } from '@/lib/types'
 
@@ -51,19 +52,31 @@ function parseTaskForm(fd: FormData, canSetTerms: boolean) {
 export async function createTask(_prev: FormState | undefined, fd: FormData): Promise<FormState> {
   const me = await requireMember()
   const exec = isExecOrAbove(me)
-  const t = parseTaskForm(fd, exec)
+  const canAssign = await can(me, 'assign_tasks')
+  const t = parseTaskForm(fd, canAssign)
   if (t.title.length < 3) return { error: 'Give the task a title (at least 3 characters).' }
   if (t.start_date && t.due_at && new Date(`${t.start_date}T00:00:00+03:00`) > new Date(t.due_at)) {
     return { error: 'The start date is after the deadline.' }
   }
   if (t.recurrence !== 'none' && !t.due_at) return { error: 'A recurring task needs a deadline to repeat from.' }
 
-  // Team members can only create work for themselves; RLS enforces this too.
-  const assignee = exec ? (t.assignee_id ?? me.id) : me.id
+  const supabase = await createClient()
+
+  // Only people allowed to assign work may give it to someone else (row-level security enforces this too).
+  let assignee = me.id
+  if (canAssign && t.assignee_id && t.assignee_id !== me.id) {
+    if (!exec) {
+      // A department director may assign only within the departments they lead.
+      const { data: target } = await supabase.from('team_members').select('department_id').eq('id', t.assignee_id).maybeSingle()
+      if (!target?.department_id || !(me.directed_departments ?? []).includes(target.department_id)) {
+        return { error: 'You can only assign tasks to members of a department you lead.' }
+      }
+    }
+    assignee = t.assignee_id
+  }
   // Self-assigned work has no separate reviewer, so approval would be meaningless.
   const requireApproval = assignee === me.id ? false : t.require_approval
 
-  const supabase = await createClient()
   const { data, error } = await supabase
     .from('tasks')
     .insert({
@@ -71,7 +84,7 @@ export async function createTask(_prev: FormState | undefined, fd: FormData): Pr
       require_approval: requireApproval,
       assignee_id: assignee,
       assigned_by: me.id,
-      assign_channels: exec ? channelsFrom(fd) : null,
+      assign_channels: canAssign ? channelsFrom(fd) : null,
     })
     .select('id')
     .single()
@@ -103,9 +116,17 @@ export async function reassignTask(_prev: FormState | undefined, fd: FormData): 
   }
   if (to === task.assignee_id) return { error: 'They already have this task.' }
 
-  if (!isExecOrAbove(me)) return { error: 'Only executives can assign work to someone else.' }
   const isReviewer = task.assigned_by === me.id || me.role === 'super_admin'
   const delegating = task.assignee_id === me.id
+  if (!(await can(me, delegating ? 'delegate_tasks' : 'assign_tasks'))) {
+    return { error: "You don't have permission to hand this task on." }
+  }
+  if (!isExecOrAbove(me)) {
+    const { data: target } = await supabase.from('team_members').select('department_id').eq('id', to).maybeSingle()
+    if (!target?.department_id || !(me.directed_departments ?? []).includes(target.department_id)) {
+      return { error: 'You can only hand work to members of a department you lead.' }
+    }
+  }
   if (!isReviewer && !delegating) return { error: 'You can\'t hand this task on.' }
 
   const due = localInputToIso(String(fd.get('due_at') ?? ''))
@@ -139,7 +160,7 @@ export async function changeStatus(_prev: FormState | undefined, formData: FormD
   const transition = allowedTransitions(task as Task, me).find((x) => x.to === to)
   if (!transition) return { error: 'You can\'t make that change to this task.' }
   if (transition.needsNote && !note) {
-    return { error: to === 'needs_revision' ? 'Say what needs to change.' : 'Add a note describing your evidence.' }
+    return { error: to === 'needs_revision' ? 'Say what needs to change.' : to === 'blocked' ? 'Say what is blocking you.' : 'Add a note describing your evidence.' }
   }
 
   const patch: Record<string, unknown> = { status: to }
@@ -149,6 +170,8 @@ export async function changeStatus(_prev: FormState | undefined, formData: FormD
   }
   if (to === 'completed') patch.completed_at = new Date().toISOString()
   if (to === 'needs_revision') patch.review_note = note
+  if (to === 'blocked') patch.blocked_reason = note
+  if (task.status === 'blocked' && to !== 'blocked') { patch.blocked_reason = null; patch.blocked_at = null }
 
   const { error } = await supabase.from('tasks').update(patch).eq('id', id)
   if (error) return { error: error.message }

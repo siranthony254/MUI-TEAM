@@ -69,3 +69,13 @@ Run migration `20260920000004_chat_calendar_resources.sql`. It also creates the 
 3. Supabase → Authentication → URL Configuration: set the Site URL to the deployed URL.
 4. Run the scheduler snippet at the bottom of migration 2 with the deployed URL and `CRON_SECRET`.
 5. Optional: give it a subdomain, e.g. `team.micdupinitiative.site`.
+
+## Migrations 8-10 (task flow, organisation, chat/files/episodes)
+
+- **8**: task comments, Blocked status, extension requests, per-event notification preferences, organisation settings that
+  drive the reminder schedule and escalation, meeting reminders and the minutes prompt.
+- **9**: department directors and department dashboards, the permission matrix, the Guest role, first-login profile setup.
+- **10**: direct messages, `#task`/`#project` references and attachments in chat, file versions and sharing, Conversations episodes.
+
+Run them in order in the Supabase SQL Editor. Then set the Supabase Site URL and add `https://<your-domain>/auth/callback` to
+Authentication → URL Configuration → Redirect URLs so the "forgot password" email link works.

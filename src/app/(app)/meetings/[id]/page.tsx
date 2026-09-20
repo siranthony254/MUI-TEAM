@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { requireMember, isExecOrAbove } from '@/lib/auth'
+import { requireMember } from '@/lib/auth'
+import { can } from '@/lib/permissions'
 import { createClient } from '@/lib/supabase/server'
 import { fmtDateTime } from '@/lib/time'
 import type { Decision, Meeting, Task } from '@/lib/types'
@@ -27,7 +28,7 @@ export default async function MeetingPage({ params }: { params: Promise<{ id: st
 
   const name = (mid: string | null) => (members ?? []).find((m) => m.id === mid)?.full_name ?? '—'
   const attendees = (attendeeRows ?? []).map((a) => ({ id: a.member_id, label: name(a.member_id), attended: a.attended as boolean | null }))
-  const canManage = me.role === 'super_admin' || (isExecOrAbove(me) && meeting.created_by === me.id)
+  const canManage = me.role === 'super_admin' || ((await can(me, 'schedule_meeting')) && meeting.created_by === me.id)
   const agendaItems = (meeting.agenda ?? '').split('\n').map((l) => l.trim()).filter(Boolean)
 
   return (

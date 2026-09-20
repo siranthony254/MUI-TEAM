@@ -19,6 +19,11 @@ export default async function LoginPage({
             This account hasn&apos;t been added to the MUI team yet. Ask an administrator to invite you.
           </p>
         )}
+        {error === 'reset-link' && (
+          <p className="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
+            That reset link has expired or was already used. Request a new one below.
+          </p>
+        )}
         <LoginForm />
       </div>
       <div className="fixed inset-x-4 bottom-4 mx-auto max-w-sm"><InstallBanner tone="dark" /></div>

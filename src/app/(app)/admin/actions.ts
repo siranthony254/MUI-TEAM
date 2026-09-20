@@ -8,7 +8,7 @@ import type { TeamRole } from '@/lib/types'
 
 export interface AdminState { error?: string; ok?: string }
 
-const ROLES: TeamRole[] = ['super_admin', 'executive', 'member']
+const ROLES: TeamRole[] = ['super_admin', 'executive', 'member', 'guest']
 
 const lines = (v: FormDataEntryValue | null) =>
   String(v ?? '').split('\n').map((s) => s.trim()).filter(Boolean)

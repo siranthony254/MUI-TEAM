@@ -84,7 +84,7 @@ export default async function Dashboard() {
   return (
     <>
       <PageTitle sub="What do you need to know and do right now?">
-        {greeting()}, {me.full_name.split(' ')[0]}.
+        {greeting()}, {me.preferred_name || me.full_name.split(' ')[0]}.
       </PageTitle>
 
       <div className="mb-4"><InstallBanner /></div>

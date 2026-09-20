@@ -6,6 +6,8 @@ import { isOverdue } from '@/lib/tasks'
 import { fmtDateTime } from '@/lib/time'
 import { ROLE_LABEL, type ActivityEntry, type Task, type TeamMember } from '@/lib/types'
 import { Card, PageTitle, SectionTitle } from '@/components/ui'
+import { Avatar } from '@/components/Avatar'
+import { startDm } from '../../chat/actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -52,6 +54,7 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
     <>
       <Link href="/people" className="text-sm text-neutral-500 hover:underline">← People</Link>
       <div className="mt-2" />
+      <div className="mb-2"><Avatar name={person.full_name} url={person.avatar_url} size={72} /></div>
       <PageTitle sub={`${person.title ?? ROLE_LABEL[person.role]} · ${ROLE_LABEL[person.role]}${department ? ` · ${department}` : ''}${person.active ? '' : ' · inactive'}`}>
         {person.full_name}
       </PageTitle>
@@ -103,6 +106,13 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
         )}
         {me.role === 'super_admin' && <Link href={`/activity?person=${person.id}`} className="mt-3 inline-block text-sm font-medium text-amber-700 hover:underline">Full activity →</Link>}
       </Card>
+
+      {person.id !== me.id && me.role !== 'guest' && (
+        <form action={startDm} className="mt-4">
+          <input type="hidden" name="member_id" value={person.id} />
+          <button className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-[#0D1F35] hover:bg-amber-400">Send a message</button>
+        </form>
+      )}
 
       <Card className="mt-4">
         <SectionTitle>Contact</SectionTitle>

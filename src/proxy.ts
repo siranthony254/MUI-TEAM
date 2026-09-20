@@ -4,7 +4,7 @@ import { supabaseUrl } from '@/lib/supabase/url'
 import { verifyUser } from '@/lib/supabase/verify'
 
 // /api/cron authenticates itself with CRON_SECRET (no user session).
-const PUBLIC_PATHS = ['/login', '/api/cron']
+const PUBLIC_PATHS = ['/login', '/forgot-password', '/auth/callback', '/api/cron']
 
 export default async function proxy(req: NextRequest) {
   const res = NextResponse.next({ request: req })

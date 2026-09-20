@@ -67,7 +67,7 @@ export default async function Announcements() {
       )}
 
       {me.is_director && (
-        <Card className="mt-8">
+        <Card id="new" className="mt-8">
           <h2 className="mb-3 font-semibold">New official announcement</h2>
           <AnnouncementForm departments={(departments ?? []).map((d) => ({ id: d.id, label: d.name }))} />
         </Card>

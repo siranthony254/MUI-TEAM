@@ -7,20 +7,24 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { requireMember, isExecOrAbove } from '@/lib/auth'
 
 const MAX_BYTES = 25 * 1024 * 1024
-const TYPES = ['task', 'report', 'decision'] as const
+const TYPES = ['task', 'report', 'decision', 'message'] as const
 type EntityType = (typeof TYPES)[number]
 
 export interface AttachmentState { error?: string; ok?: string }
 
 const clean = (name: string) => name.normalize('NFKD').replace(/[^\w.\- ]+/g, '').replace(/\s+/g, '_').slice(0, 120) || 'file'
 
-const pathFor = (type: EntityType, id: string) => (type === 'task' ? `/tasks/${id}` : type === 'report' ? `/reports/${id}` : '/decisions')
+const pathFor = (type: EntityType, id: string) => (type === 'task' ? `/tasks/${id}` : type === 'report' ? `/reports/${id}` : type === 'message' ? '/chat' : '/decisions')
 
 /** Mirrors the database policy so we never issue an upload URL to someone who could not attach anyway. */
 async function canAttach(type: EntityType, id: string): Promise<boolean> {
   const me = await requireMember()
   const supabase = await createClient()
   if (type === 'decision') return isExecOrAbove(me)
+  if (type === 'message') {
+    const { data } = await supabase.from('messages').select('author_id').eq('id', id).maybeSingle()
+    return !!data && data.author_id === me.id
+  }
   if (type === 'task') {
     const { data } = await supabase.from('tasks').select('assignee_id, assigned_by').eq('id', id).maybeSingle()
     return !!data && (me.role === 'super_admin' || data.assignee_id === me.id || data.assigned_by === me.id)

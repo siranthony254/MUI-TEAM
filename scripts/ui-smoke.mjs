@@ -22,7 +22,7 @@ async function mk(key, role, extra = {}) {
   const { data, error } = await svc.auth.admin.createUser({ email, password, email_confirm: true })
   if (error) throw error
   users.push(data.user.id)
-  await svc.from('team_members').upsert({ id: data.user.id, full_name: `ZZUI ${key}`, email, role, ...extra })
+  await svc.from('team_members').upsert({ id: data.user.id, full_name: `ZZUI ${key}`, email, role, profile_completed_at: new Date().toISOString(), ...extra })
   const c = createClient(origin, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, opts)
   const { data: s, error: e2 } = await c.auth.signInWithPassword({ email, password })
   if (e2) throw e2
@@ -43,7 +43,8 @@ async function get(path, cookie) {
 const PAGES = process.env.PAGES ? process.env.PAGES.split(',') : [
   '/', '/tasks', '/tasks/new', '/tasks?filter=delegated', '/projects', '/people', '/responsibilities', '/chat',
   '/calendar', '/calendar?scope=team', '/meetings', '/meetings/new', '/decisions', '/reports', '/resources',
-  '/activity', '/notifications', '/account', '/more', '/analytics', '/announcements', '/director', '/admin', '/admin/onboarding', '/admin/campaigns',
+  '/activity', '/notifications', '/account', '/more', '/analytics', '/announcements', '/director', '/admin', '/admin/onboarding', '/admin/campaigns', '/admin/settings', '/admin/permissions', '/admin/departments',
+  '/departments', '/conversations', '/search?q=test', '/welcome',
 ]
 
 try {
@@ -52,9 +53,10 @@ try {
   const M = await mk('member', 'member', { title: 'Member' })
   // Only one Executive Director can exist; skip that column if the real one is already set up.
   const G = await mk('director', 'executive', { title: 'Executive Director', is_director: true }).catch(() => null)
-  const cols = [S, X, M, ...(G ? [G] : [])]
+  const Gu = await mk('guest', 'guest', { title: 'Guest' }).catch(() => null)
+  const cols = [S, X, M, ...(G ? [G] : []), ...(Gu ? [Gu] : [])]
   console.log(`base ${BASE}\n`)
-  console.log('page'.padEnd(28), 'sysadmin'.padEnd(14), 'executive'.padEnd(14), 'member'.padEnd(14), G ? 'director' : '')
+  console.log('page'.padEnd(28), 'sysadmin'.padEnd(14), 'executive'.padEnd(14), 'member'.padEnd(14), 'director'.padEnd(14), 'guest')
   let problems = 0
   for (const p of PAGES) {
     const row = []

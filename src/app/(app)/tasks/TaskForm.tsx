@@ -26,8 +26,8 @@ export function ChannelPicker() {
 }
 
 export function TaskForm({
-  members, projects, departments, canAssign,
-}: { members: Option[]; projects: Option[]; departments: Option[]; canAssign: boolean }) {
+  members, projects, departments, canAssign, defaultDue = '',
+}: { members: Option[]; projects: Option[]; departments: Option[]; canAssign: boolean; defaultDue?: string }) {
   const router = useRouter()
   const filesRef = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
@@ -110,7 +110,7 @@ export function TaskForm({
           <input name="start_date" type="date" className={inputClass} />
         </label>
         <label className="block text-sm font-medium">Due (date and time)
-          <input name="due_at" type="datetime-local" className={inputClass} />
+          <input name="due_at" type="datetime-local" defaultValue={defaultDue} className={inputClass} />
         </label>
         {canAssign && (
           <label className="block text-sm font-medium">Weight in its project (1–100)

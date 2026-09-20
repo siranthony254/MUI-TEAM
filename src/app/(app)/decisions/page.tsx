@@ -1,5 +1,6 @@
 import Link from 'next/link'
-import { requireMember, isExecOrAbove } from '@/lib/auth'
+import { requireMember } from '@/lib/auth'
+import { can } from '@/lib/permissions'
 import { createClient } from '@/lib/supabase/server'
 import { fmtDay } from '@/lib/time'
 import type { Decision } from '@/lib/types'
@@ -33,7 +34,7 @@ export default async function Decisions({ searchParams }: { searchParams: Promis
   const shown = all
     .filter((d) => status === 'all' || d.status === status)
     .filter((d) => !needle || [d.title, d.decision, d.rationale, num(d.number)].some((v) => v?.toLowerCase().includes(needle)))
-  const canEdit = isExecOrAbove(me)
+  const canEdit = await can(me, 'record_decision')
   const nameOf = (id: string | null) => (members ?? []).find((m) => m.id === id)?.full_name
   const projectOf = (id: string | null) => (projects ?? []).find((p) => p.id === id)
 
@@ -113,7 +114,7 @@ export default async function Decisions({ searchParams }: { searchParams: Promis
       )}
 
       {canEdit && (
-        <Card className="mt-8">
+        <Card id="new" className="mt-8">
           <h2 className="mb-3 font-semibold">Record a decision</h2>
           <NewDecisionForm
             people={(members ?? []).map((m) => ({ id: m.id, label: m.full_name }))}

@@ -3,6 +3,7 @@ import { requireMember } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { ROLE_LABEL, type TeamMember } from '@/lib/types'
 import { Card, PageTitle } from '@/components/ui'
+import { Avatar } from '@/components/Avatar'
 
 export const dynamic = 'force-dynamic'
 
@@ -47,9 +48,10 @@ export default async function People({
         </select>
         <select name="role" defaultValue={sp.role ?? ''} className={sel} aria-label="Access level">
           <option value="">All levels</option>
-          <option value="super_admin">Super Admin</option>
+          <option value="super_admin">System Admin</option>
           <option value="executive">Executive</option>
           <option value="member">Team Member</option>
+          <option value="guest">Guest</option>
         </select>
         <select name="group" defaultValue={sp.group ?? ''} className={sel} aria-label="Group">
           <option value="">Executive + team</option>
@@ -73,9 +75,14 @@ export default async function People({
           {members.map((m) => (
             <Link key={m.id} href={`/people/${m.id}`}>
               <Card className={`h-full transition hover:border-amber-400 ${m.active ? '' : 'opacity-60'}`}>
-                <p className="font-semibold">{m.full_name}{!m.active && ' (inactive)'}</p>
-                <p className="text-sm text-neutral-600">{m.title ?? ROLE_LABEL[m.role]}</p>
-                <p className="mt-1 text-xs text-neutral-500">{[deptName(m.department_id), ROLE_LABEL[m.role]].filter(Boolean).join(' · ')}</p>
+                <div className="flex items-center gap-3">
+                  <Avatar name={m.full_name} url={m.avatar_url} size={44} />
+                  <div className="min-w-0">
+                    <p className="font-semibold">{m.full_name}{!m.active && ' (inactive)'}</p>
+                    <p className="text-sm text-neutral-600">{m.title ?? ROLE_LABEL[m.role]}</p>
+                    <p className="mt-0.5 text-xs text-neutral-500">{[deptName(m.department_id), ROLE_LABEL[m.role]].filter(Boolean).join(' · ')}</p>
+                  </div>
+                </div>
               </Card>
             </Link>
           ))}

@@ -21,6 +21,7 @@ export function EditMemberForm({
         <label className="block text-sm font-medium">Access level
           <select name="role" defaultValue={member.role} className={inputClass}>
             <option value="member">Team Member</option>
+            <option value="guest">Guest / external collaborator</option>
             <option value="executive">Executive</option>
             <option value="super_admin" disabled={topRolesLocked && member.role !== 'super_admin'}>System Admin</option>
           </select>

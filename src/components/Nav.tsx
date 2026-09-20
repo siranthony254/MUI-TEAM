@@ -5,9 +5,9 @@ import { usePathname } from 'next/navigation'
 import { Menu } from 'lucide-react'
 import { MOBILE_PRIMARY, visibleItems } from './nav-items'
 
-export function Nav({ role, isDirector, unread, chatUnread }: { role: 'super_admin' | 'executive' | 'member'; isDirector: boolean; unread: number; chatUnread: number }) {
+export function Nav({ role, isDirector, showAnalytics, unread, chatUnread, orgName }: { role: 'super_admin' | 'executive' | 'member' | 'guest'; isDirector: boolean; showAnalytics: boolean; unread: number; chatUnread: number; orgName: string }) {
   const path = usePathname()
-  const items = visibleItems(role, isDirector)
+  const items = visibleItems(role, isDirector, showAnalytics)
   const active = (href: string) => (href === '/' ? path === '/' : path.startsWith(href))
   const primary = items.filter((i) => MOBILE_PRIMARY.includes(i.href))
   const moreActive = !primary.some((i) => active(i.href))
@@ -16,7 +16,7 @@ export function Nav({ role, isDirector, unread, chatUnread }: { role: 'super_adm
     <>
       {/* Desktop sidebar */}
       <nav aria-label="Main" className="hidden w-56 shrink-0 flex-col gap-1 bg-[#0D1F35] p-4 md:flex">
-        <p className="mb-4 px-2 text-xs font-semibold uppercase tracking-widest text-amber-400">MUI Team</p>
+        <p className="mb-4 px-2 text-xs font-semibold uppercase tracking-widest text-amber-400">{orgName}</p>
         {items.map(({ href, label, icon: Icon }) => (
           <Link key={href} href={href}
             className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm ${

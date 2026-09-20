@@ -12,6 +12,8 @@ export interface DeptStat { id: string | null; name: string; open: number; overd
 export function reportingLine(me: TeamMember, members: TeamMember[]): Set<string> {
   if (me.role === 'super_admin' || me.is_director) return new Set(members.map((m) => m.id))
   const ids = new Set<string>([me.id])
+  // Department directors also answer for everyone in the departments they lead.
+  for (const m of members) if (m.department_id && (me.directed_departments ?? []).includes(m.department_id)) ids.add(m.id)
   let grew = true
   while (grew) {
     grew = false

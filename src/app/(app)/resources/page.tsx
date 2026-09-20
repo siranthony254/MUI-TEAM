@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { ExternalLink, FileText } from 'lucide-react'
-import { requireMember, isExecOrAbove } from '@/lib/auth'
+import { requireMember } from '@/lib/auth'
+import { can } from '@/lib/permissions'
 import { createClient } from '@/lib/supabase/server'
 import { fmtDay } from '@/lib/time'
 import { RESOURCE_CATEGORIES, type Resource } from '@/lib/types'
@@ -61,8 +62,7 @@ export default async function Resources({
               {r.kind === 'link' ? <ExternalLink size={20} className="mt-0.5 shrink-0 text-amber-600" aria-hidden /> : <FileText size={20} className="mt-0.5 shrink-0 text-amber-600" aria-hidden />}
               <div className="min-w-0 flex-1">
                 {/* Files go through /download so access is checked before a signed URL is issued. */}
-                <a href={`/resources/${r.id}/download`} {...(r.kind === 'link' ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-                  className="font-medium hover:underline">{r.title}</a>
+                <Link href={`/resources/${r.id}`} className="font-medium hover:underline">{r.title}</Link>
                 {r.description && <p className="text-sm text-neutral-600">{r.description}</p>}
                 <p className="mt-1 text-xs text-neutral-500">
                   {r.category}
@@ -82,8 +82,8 @@ export default async function Resources({
         </div>
       )}
 
-      {isExecOrAbove(me) && (
-        <div className="mt-8 grid gap-4 md:grid-cols-2">
+      {(await can(me, 'add_resource')) && (
+        <div id="upload" className="mt-8 grid scroll-mt-20 gap-4 md:grid-cols-2">
           <Card><h2 className="mb-3 font-semibold">Upload a file</h2><UploadFileForm /></Card>
           <Card><h2 className="mb-3 font-semibold">Or add a link</h2><AddLinkForm /></Card>
         </div>

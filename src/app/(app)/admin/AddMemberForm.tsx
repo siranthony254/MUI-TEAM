@@ -17,6 +17,7 @@ export function AddMemberForm({ departments, people, topRolesLocked }: { departm
         <label className="block text-sm font-medium">Access level
           <select name="role" defaultValue="member" className={inputClass}>
             <option value="member">Team Member</option>
+            <option value="guest">Guest / external collaborator</option>
             <option value="executive">Executive</option>
             <option value="super_admin" disabled={topRolesLocked}>System Admin{topRolesLocked ? ' (Director only)' : ''}</option>
           </select>

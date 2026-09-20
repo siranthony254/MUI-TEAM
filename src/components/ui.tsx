@@ -7,6 +7,7 @@ const STATUS_STYLE: Record<TaskStatus, string> = {
   submitted: 'bg-purple-100 text-purple-800',
   under_review: 'bg-purple-100 text-purple-800',
   needs_revision: 'bg-red-100 text-red-800',
+  blocked: 'bg-orange-100 text-orange-800',
   completed: 'bg-green-100 text-green-800',
   closed: 'bg-neutral-200 text-neutral-600',
 }
@@ -30,8 +31,8 @@ export function PriorityLabel({ priority }: { priority: TaskPriority }) {
   return <span className={`text-xs font-medium capitalize ${PRIORITY_STYLE[priority]}`}>{priority}</span>
 }
 
-export function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  return <section className={`rounded-xl border border-neutral-200 bg-white p-4 ${className}`}>{children}</section>
+export function Card({ children, className = '', id }: { children: React.ReactNode; className?: string; id?: string }) {
+  return <section id={id} className={`scroll-mt-20 rounded-xl border border-neutral-200 bg-white p-4 ${className}`}>{children}</section>
 }
 
 export function PageTitle({ children, sub }: { children: React.ReactNode; sub?: string }) {

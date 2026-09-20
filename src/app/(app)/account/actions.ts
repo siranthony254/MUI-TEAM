@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { requireMember } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { normalizePhone } from '@/lib/notify/phone'
+import { GROUPS, parseMandatory } from '@/lib/notify/groups'
 
 interface State { error?: string; ok?: string }
 
@@ -56,4 +57,25 @@ export async function removePushSubscription(endpoint: string) {
   const me = await requireMember()
   const supabase = await createClient()
   await supabase.from('push_subscriptions').delete().eq('member_id', me.id).eq('endpoint', endpoint)
+}
+
+/** The per-event matrix: which channels each kind of event may use for this person. */
+export async function saveNotificationMatrix(_prev: State | undefined, formData: FormData): Promise<State> {
+  const me = await requireMember()
+  const supabase = await createClient()
+  const { data: setting } = await supabase.from('org_settings').select('value').eq('key', 'mandatory_groups').maybeSingle()
+  const mandatory = parseMandatory(setting?.value)
+
+  const rows = GROUPS.map((g) => {
+    const on = (ch: string) => formData.get(`${g.id}.${ch}`) === 'on'
+    const locked = mandatory.includes(g.id)
+    return {
+      member_id: me.id, event_group: g.id,
+      in_app: locked || on('in_app'), email: locked || on('email'), push: locked || on('push'), sms: on('sms'),
+    }
+  })
+  const { error } = await supabase.from('notification_prefs').upsert(rows, { onConflict: 'member_id,event_group' })
+  if (error) return { error: error.message }
+  revalidatePath('/', 'layout')
+  return { ok: 'Notification settings saved.' }
 }

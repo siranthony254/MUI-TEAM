@@ -1,4 +1,4 @@
-import { requireRole } from '@/lib/auth'
+import { requireCap } from '@/lib/permissions'
 import { createClient } from '@/lib/supabase/server'
 import { Card, PageTitle } from '@/components/ui'
 import { MeetingForm } from '../MeetingForm'
@@ -6,7 +6,7 @@ import { MeetingForm } from '../MeetingForm'
 export const dynamic = 'force-dynamic'
 
 export default async function NewMeeting() {
-  const me = await requireRole('super_admin', 'executive')
+  const me = await requireCap('schedule_meeting')
   const supabase = await createClient()
   const [{ data: people }, { data: projects }] = await Promise.all([
     supabase.from('team_members').select('id, full_name').eq('active', true).neq('id', me.id).order('full_name'),

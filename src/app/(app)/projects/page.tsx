@@ -1,5 +1,6 @@
 import Link from 'next/link'
-import { requireMember, isExecOrAbove } from '@/lib/auth'
+import { requireMember } from '@/lib/auth'
+import { can } from '@/lib/permissions'
 import { createClient } from '@/lib/supabase/server'
 import type { Project } from '@/lib/types'
 import { Card, PageTitle, buttonClass, inputClass } from '@/components/ui'
@@ -59,8 +60,8 @@ export default async function Projects() {
         </div>
       )}
 
-      {isExecOrAbove(me) && (
-        <Card className="mt-8">
+      {(await can(me, 'create_project')) && (
+        <Card id="new" className="mt-8">
           <h2 className="mb-3 font-semibold">Create a project</h2>
           <form action={createProject} className="space-y-3">
             <label className="block text-sm font-medium">Name<input name="name" required minLength={3} className={inputClass} /></label>

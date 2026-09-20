@@ -1,9 +1,10 @@
 import Link from 'next/link'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { requireMember, isExecOrAbove } from '@/lib/auth'
+import { can } from '@/lib/permissions'
 import { createClient } from '@/lib/supabase/server'
 import { dayKey, fmtDay, monthParam, parseMonthParam, shiftMonth, TZ } from '@/lib/time'
-import type { CalendarEvent, Meeting, Project, Task } from '@/lib/types'
+import type { CalendarEvent, Episode, Meeting, Project, Task } from '@/lib/types'
 import { Card, PageTitle } from '@/components/ui'
 import { EventForm } from './EventForm'
 import { deleteEvent } from './actions'
@@ -57,12 +58,14 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
   if (scope === 'mine') taskQuery = taskQuery.eq('assignee_id', me.id)
   if (scope === 'department') taskQuery = taskQuery.in('assignee_id', (peers ?? []).map((p) => p.id))
 
-  const [{ data: tasks }, { data: meetings }, { data: events }, { data: projects }] = await Promise.all([
+  const [{ data: tasks }, { data: meetings }, { data: events }, { data: projects }, { data: episodes }] = await Promise.all([
     taskQuery,
     supabase.from('meetings').select('id, title, starts_at, status').neq('status', 'cancelled').gte('starts_at', from).lt('starts_at', to),
     supabase.from('calendar_events').select('*').gte('starts_at', from).lt('starts_at', to),
     supabase.from('projects').select('id, name, due_date, status').neq('status', 'done')
       .gte('due_date', first).lt('due_date', to.slice(0, 10)),
+    supabase.from('episodes').select('id, number, title, recording_at, publish_on, status').neq('status', 'archived')
+      .or(`and(recording_at.gte.${from},recording_at.lt.${to}),and(publish_on.gte.${first},publish_on.lt.${to.slice(0, 10)})`),
   ])
 
   const items: Item[] = [
@@ -76,6 +79,14 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
       sub: [e.description, e.visibility === 'executive' ? 'Executives only' : null].filter(Boolean).join(' · ') || undefined,
       eventId: e.id, canDelete: me.role === 'super_admin' || e.created_by === me.id, href: `/calendar/events/${e.id}`,
     })),
+    ...((episodes ?? []) as Pick<Episode, 'id' | 'number' | 'title' | 'recording_at' | 'publish_on'>[]).flatMap((ep) => [
+      ...(ep.recording_at && ep.recording_at >= from && ep.recording_at < to
+        ? [{ day: dayKey(ep.recording_at), time: timeOf(ep.recording_at), title: `Ep ${ep.number}: ${ep.title}`, href: `/conversations/${ep.id}`, kind: 'recording' as const }]
+        : []),
+      ...(ep.publish_on && ep.publish_on >= first && ep.publish_on < to.slice(0, 10)
+        ? [{ day: ep.publish_on, time: null, title: `Ep ${ep.number} publishes`, href: `/conversations/${ep.id}`, kind: 'publication' as const }]
+        : []),
+    ]),
     ...((projects ?? []) as Project[]).map((p) => ({ day: p.due_date!, time: null, title: p.name, href: `/projects/${p.id}`, kind: 'project' as const })),
   ].sort((a, b) => a.day.localeCompare(b.day) || (a.time ?? '').localeCompare(b.time ?? ''))
 
@@ -170,8 +181,8 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
         </div>
       )}
 
-      {isExecOrAbove(me) && (
-        <Card className="mt-8">
+      {(await can(me, 'add_event')) && (
+        <Card id="new" className="mt-8">
           <h2 className="mb-3 font-semibold">Add an event</h2>
           <EventForm />
         </Card>

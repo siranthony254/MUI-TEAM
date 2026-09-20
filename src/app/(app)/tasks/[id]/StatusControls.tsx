@@ -21,7 +21,7 @@ export function StatusControls({ id, transitions }: { id: string; transitions: T
       <input type="hidden" name="id" value={id} />
       {needsNote && (
         <label className="block text-sm font-medium">
-          Note (required for evidence and for requesting a revision)
+          Note (required for evidence, a revision request, or when you're blocked)
           <textarea name="note" rows={3} className={inputClass} />
         </label>
       )}

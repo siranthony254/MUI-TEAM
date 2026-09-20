@@ -72,7 +72,10 @@ export default async function AdminHome() {
         <Stat label="Awaiting delivery" value={pending.count ?? 0} tone={(pending.count ?? 0) > 20 ? 'text-orange-600' : ''} />
       </div>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 md:grid-cols-3">
+        <Link href="/admin/permissions"><Card className="h-full transition hover:border-amber-400"><p className="font-semibold">Permissions</p><p className="mt-0.5 text-xs text-neutral-500">Who may do what, by level.</p></Card></Link>
+        <Link href="/admin/departments"><Card className="h-full transition hover:border-amber-400"><p className="font-semibold">Departments</p><p className="mt-0.5 text-xs text-neutral-500">Create departments and choose directors.</p></Card></Link>
+        <Link href="/admin/settings"><Card className="h-full transition hover:border-amber-400"><p className="font-semibold">Organisation settings</p><p className="mt-0.5 text-xs text-neutral-500">Reminders, escalation, meeting prompts, required notifications.</p></Card></Link>
         <Link href="/admin/onboarding"><Card className="h-full transition hover:border-amber-400"><p className="font-semibold">Onboarding</p><p className="mt-0.5 text-xs text-neutral-500">Welcome message and the checklist new members get.</p></Card></Link>
         <Link href="/admin/campaigns"><Card className="h-full transition hover:border-amber-400"><p className="font-semibold">Campaigns</p><p className="mt-0.5 text-xs text-neutral-500">Send a message to part of the team.</p></Card></Link>
         <Link href="/analytics"><Card className="h-full transition hover:border-amber-400"><p className="font-semibold">Analytics</p><p className="mt-0.5 text-xs text-neutral-500">Organisation-wide command centre.</p></Card></Link>

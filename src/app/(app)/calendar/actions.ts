@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { requireMember, isExecOrAbove } from '@/lib/auth'
 import { localInputToIso } from '@/lib/time'
+import { can, dbFor } from '@/lib/permissions'
+
 
 export interface EventState { error?: string; ok?: string }
 
@@ -11,7 +13,7 @@ const KINDS = ['event', 'recording', 'publication', 'deadline', 'other']
 
 export async function createEvent(_prev: EventState | undefined, fd: FormData): Promise<EventState> {
   const me = await requireMember()
-  if (!isExecOrAbove(me)) return { error: 'Only executives can add calendar events.' }
+  if (!(await can(me, 'add_event'))) return { error: "You don't have permission to add calendar events." }
 
   const title = String(fd.get('title') ?? '').trim()
   const allDay = fd.get('all_day') === 'on'
@@ -27,7 +29,7 @@ export async function createEvent(_prev: EventState | undefined, fd: FormData): 
   if (!starts_at) return { error: 'Choose a date.' }
   if (ends_at && ends_at <= starts_at) return { error: 'The end must be after the start.' }
 
-  const supabase = await createClient()
+  const supabase = await dbFor(me)
   const { error } = await supabase.from('calendar_events').insert({
     title,
     description: String(fd.get('description') ?? '').trim() || null,
