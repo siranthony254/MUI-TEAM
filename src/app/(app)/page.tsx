@@ -5,6 +5,7 @@ import { isDueToday, isOverdue, fmtDue, PRIORITY_ORDER } from '@/lib/tasks'
 import type { Task } from '@/lib/types'
 import { fmtDateTime, nairobiHour } from '@/lib/time'
 import { Card, PageTitle, StatusBadge } from '@/components/ui'
+import { markOnboardingDone } from './home-actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -37,6 +38,22 @@ export default async function Dashboard() {
     .eq('assigned_by', me.id)
     .in('status', ['submitted', 'under_review'])
 
+  // Welcome + onboarding checklist, and the latest official announcement.
+  const [{ data: welcome }, { data: onboarding }, { data: latestAnn }] = await Promise.all([
+    supabase.from('org_settings').select('value').eq('key', 'welcome_message').maybeSingle(),
+    supabase.from('member_onboarding').select('item_id, done_at, onboarding_items(title, description, link, position)').eq('member_id', me.id),
+    supabase.from('announcements').select('id, title, body, publish_at, priority')
+      .lte('publish_at', new Date().toISOString())
+      .gte('publish_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+      .order('publish_at', { ascending: false }).limit(1),
+  ])
+  type Step = { item_id: string; done_at: string | null; onboarding_items: { title: string; description: string | null; link: string | null; position: number } | { title: string; description: string | null; link: string | null; position: number }[] | null }
+  const steps = ((onboarding ?? []) as unknown as Step[])
+    .map((r) => ({ ...r, item: Array.isArray(r.onboarding_items) ? r.onboarding_items[0] : r.onboarding_items }))
+    .filter((r) => r.item)
+    .sort((a, b) => a.item!.position - b.item!.position)
+  const pendingSteps = steps.filter((s) => !s.done_at)
+
   // Work I handed on and am still waiting for.
   const { count: delegatedOut } = await supabase
     .from('tasks')
@@ -68,6 +85,49 @@ export default async function Dashboard() {
       <PageTitle sub="What do you need to know and do right now?">
         {greeting()}, {me.full_name.split(' ')[0]}.
       </PageTitle>
+
+      {me.is_director && (
+        <Link href="/director" className="mb-4 block rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950 transition hover:border-amber-400">
+          <strong>Executive Director&apos;s desk</strong> — official announcements, what needs you, and delegating system administration while you&apos;re away →
+        </Link>
+      )}
+
+      {(latestAnn ?? []).length > 0 && (
+        <Link href="/announcements" className="mb-4 block rounded-xl border border-neutral-200 bg-white p-4 transition hover:border-amber-400">
+          <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">Official announcement</p>
+          <p className="mt-0.5 font-semibold text-[#0D1F35]">{latestAnn![0].title}</p>
+          <p className="mt-1 line-clamp-2 text-sm text-neutral-600">{latestAnn![0].body}</p>
+        </Link>
+      )}
+
+      {pendingSteps.length > 0 && (
+        <Card className="mb-4 border-amber-300 bg-amber-50">
+          <p className="font-semibold text-[#0D1F35]">Welcome to MUI</p>
+          {welcome?.value && <p className="mt-1 whitespace-pre-wrap text-sm text-neutral-700">{welcome.value}</p>}
+          <ul className="mt-3 space-y-2">
+            {steps.map((st) => (
+              <li key={st.item_id} className="flex items-start gap-3 text-sm">
+                <span aria-hidden className={`mt-1 h-4 w-4 shrink-0 rounded border ${st.done_at ? 'border-green-600 bg-green-600' : 'border-neutral-400 bg-white'}`} />
+                <span className="min-w-0 flex-1">
+                  <span className={st.done_at ? 'text-neutral-400 line-through' : 'font-medium'}>{st.item!.title}</span>
+                  {st.item!.description && !st.done_at && <span className="block text-xs text-neutral-600">{st.item!.description}</span>}
+                </span>
+                {!st.done_at && (
+                  <span className="flex shrink-0 items-center gap-3">
+                    {st.item!.link && (st.item!.link.startsWith('/')
+                      ? <Link href={st.item!.link} className="text-xs font-medium text-amber-700 hover:underline">Open</Link>
+                      : <a href={st.item!.link} target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-amber-700 hover:underline">Open</a>)}
+                    <form action={markOnboardingDone}>
+                      <input type="hidden" name="item_id" value={st.item_id} />
+                      <button className="text-xs font-medium text-neutral-600 hover:underline">Mark done</button>
+                    </form>
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {stats.map((s) => (

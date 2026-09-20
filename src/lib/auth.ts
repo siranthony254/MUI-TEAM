@@ -31,3 +31,20 @@ export async function requireRole(...roles: TeamRole[]): Promise<TeamMember> {
 }
 
 export const isExecOrAbove = (m: TeamMember) => m.role === 'super_admin' || m.role === 'executive'
+
+/** Whole-organisation view: system admins and the Executive Director. */
+export const hasOrgView = (m: TeamMember) => m.role === 'super_admin' || m.is_director
+
+/** The Executive Director only (official announcements, delegating admin access). */
+export async function requireDirector(): Promise<TeamMember> {
+  const member = await requireMember()
+  if (!member.is_director) redirect('/')
+  return member
+}
+
+/** System admins and the Executive Director (e.g. campaigns). */
+export async function requireAdminOrDirector(): Promise<TeamMember> {
+  const member = await requireMember()
+  if (member.role !== 'super_admin' && !member.is_director) redirect('/')
+  return member
+}

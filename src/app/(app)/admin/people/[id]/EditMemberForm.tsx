@@ -8,8 +8,8 @@ import { updateMember } from '../../actions'
 interface Option { id: string; label: string }
 
 export function EditMemberForm({
-  member, departments, people,
-}: { member: TeamMember; departments: Option[]; people: Option[] }) {
+  member, departments, people, topRolesLocked,
+}: { member: TeamMember; departments: Option[]; people: Option[]; topRolesLocked: boolean }) {
   const [state, action, pending] = useActionState(updateMember, undefined)
   return (
     <form action={action} className="space-y-4">
@@ -22,7 +22,7 @@ export function EditMemberForm({
           <select name="role" defaultValue={member.role} className={inputClass}>
             <option value="member">Team Member</option>
             <option value="executive">Executive</option>
-            <option value="super_admin">Super Admin</option>
+            <option value="super_admin" disabled={topRolesLocked && member.role !== 'super_admin'}>System Admin</option>
           </select>
         </label>
         <label className="block text-sm font-medium">Department
@@ -38,6 +38,11 @@ export function EditMemberForm({
           </select>
         </label>
       </div>
+      <label className={`flex items-start gap-2 text-sm ${topRolesLocked ? 'text-neutral-400' : ''}`}>
+        <input type="checkbox" name="is_director" defaultChecked={member.is_director} disabled={topRolesLocked} className="mt-0.5" />
+        <span>Executive Director (must hold the Executive access level)</span>
+      </label>
+      {topRolesLocked && <p className="text-xs text-neutral-500">Only the Executive Director can change system-admin access or the Director role.</p>}
       <label className="block text-sm font-medium">Mandate — why does this role exist?
         <textarea name="mandate" rows={3} defaultValue={member.mandate ?? ''} className={inputClass} />
       </label>

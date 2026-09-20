@@ -65,7 +65,7 @@ export default async function Analytics() {
 
   return (
     <>
-      <PageTitle sub={me.role === 'super_admin' ? 'Whole organisation' : 'You and everyone who reports to you'}>
+      <PageTitle sub={me.role === 'super_admin' || me.is_director ? 'Whole organisation' : 'You and everyone who reports to you'}>
         Command centre
       </PageTitle>
 

@@ -10,7 +10,7 @@ export interface DeptStat { id: string | null; name: string; open: number; overd
 
 /** Who an executive is responsible for: themselves plus everyone who reports to them, transitively. */
 export function reportingLine(me: TeamMember, members: TeamMember[]): Set<string> {
-  if (me.role === 'super_admin') return new Set(members.map((m) => m.id))
+  if (me.role === 'super_admin' || me.is_director) return new Set(members.map((m) => m.id))
   const ids = new Set<string>([me.id])
   let grew = true
   while (grew) {

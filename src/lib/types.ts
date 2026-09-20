@@ -21,6 +21,10 @@ export interface TeamMember {
   notify_email: boolean
   notify_push: boolean
   notify_sms: boolean
+  is_director: boolean
+  admin_until: string | null
+  admin_granted_by: string | null
+  role_before_admin: TeamRole | null
 }
 
 export interface Task {
@@ -78,7 +82,7 @@ export interface AppNotification {
 }
 
 export const ROLE_LABEL: Record<TeamRole, string> = {
-  super_admin: 'Super Admin',
+  super_admin: 'System Admin',
   executive: 'Executive',
   member: 'Team Member',
 }
@@ -220,3 +224,37 @@ export interface ActivityEntry {
 }
 
 export interface Department { id: string; name: string; description: string | null }
+
+export interface Announcement {
+  id: string
+  title: string
+  body: string
+  audience: 'all' | 'executives' | 'department'
+  department_id: string | null
+  priority: 'normal' | 'important' | 'urgent'
+  publish_at: string
+  notified_at: string | null
+  created_by: string | null
+  created_at: string
+}
+
+export interface OnboardingItem {
+  id: string
+  title: string
+  description: string | null
+  link: string | null
+  position: number
+  active: boolean
+}
+
+export interface Campaign {
+  id: string
+  title: string
+  body: string
+  link: string | null
+  audience: string
+  channels: string[]
+  recipient_count: number
+  sent_by: string | null
+  created_at: string
+}

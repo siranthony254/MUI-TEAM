@@ -231,6 +231,95 @@ async function main() {
     const still = (await svc.from('team_members').select('role').eq('id', M.id).single()).data.role
     ok(still === 'member', 'role changed!')
   })
+  // ---- Executive Director / System Admin / announcements / onboarding (migration 7) ----
+  const hasDirector = ((await svc.from('team_members').select('id').eq('is_director', true)).data ?? []).length > 0
+  let G = null
+  if (!hasDirector) G = await mkUser('director', 'executive', { is_director: true })
+
+  await t('director: sees org-wide tasks; an ordinary executive does not', async () => {
+    if (!G) return
+    const other = noErr(await E2.client.from('tasks').insert({ title: `${P} elsewhere`, assigned_by: E2.id, assignee_id: D.id }).select('id').single()).id
+    ok((noErr(await G.client.from('tasks').select('id').eq('id', other))).length === 1, 'director cannot see org-wide task')
+    ok((noErr(await E.client.from('tasks').select('id').eq('id', other))).length === 0, 'plain executive sees a task outside their line')
+  })
+
+  await t('director sees all channels and meetings; an unrelated executive does not see others\' meetings', async () => {
+    if (!G) return
+    ok((noErr(await G.client.from('channels').select('id').eq('project_id', project))).length === 1, 'director cannot see project channel')
+    ok((noErr(await G.client.from('meetings').select('id').eq('id', meeting))).length === 1, 'director cannot see meeting')
+    ok((noErr(await E2.client.from('meetings').select('id').eq('id', meeting))).length === 0, 'unrelated executive sees meeting')
+  })
+
+  await t('announcements: only the director publishes; audience and schedule are enforced', async () => {
+    if (!G) return
+    isErr(await E.client.from('announcements').insert({ title: `${P} nope`, body: 'x', created_by: E.id }), 'executive published an announcement')
+    isErr(await M.client.from('announcements').insert({ title: `${P} nope`, body: 'x', created_by: M.id }), 'member published an announcement')
+    const all = noErr(await G.client.from('announcements').insert({ title: `${P} all`, body: 'hello team', created_by: G.id }).select('id').single()).id
+    const exec = noErr(await G.client.from('announcements').insert({ title: `${P} execonly`, body: 'x', audience: 'executives', created_by: G.id }).select('id').single()).id
+    const dept = noErr(await G.client.from('announcements').insert({ title: `${P} dept`, body: 'x', audience: 'department', department_id: created.dept, created_by: G.id }).select('id').single()).id
+    const later = noErr(await G.client.from('announcements').insert({ title: `${P} later`, body: 'x', publish_at: daysFromNow(2), created_by: G.id }).select('id').single()).id
+    const seen = async (u) => new Set((noErr(await u.client.from('announcements').select('id'))).map((r) => r.id))
+    const mSees = await seen(M)
+    const eSees = await seen(E)
+    ok(mSees.has(all) && mSees.has(dept), 'member misses a public/department announcement')
+    ok(!mSees.has(exec), 'member sees executives-only announcement')
+    ok(eSees.has(exec), 'executive misses executives-only announcement')
+    ok(!mSees.has(later) && !eSees.has(later), 'scheduled announcement visible early')
+    ok((noErr(await G.client.from('announcements').select('id').eq('id', later))).length === 1, 'director cannot see own scheduled announcement')
+  })
+
+  await t('publishing notifies the audience exactly once, and only when due', async () => {
+    if (!G) return
+    const n1 = noErr(await svc.rpc('publish_due_announcements'))
+    ok(n1 >= 3, `expected notifications for due announcements, got ${n1}`)
+    ok((await notes(M, 'announcement')).length >= 2, 'member not notified')
+    ok((await notes(E, 'announcement')).length >= 2, 'executive not notified of executives-only')
+    const before = (await svc.from('notifications').select('id').like('dedupe_key', 'announcement:%')).data.length
+    await svc.rpc('publish_due_announcements')
+    const after = (await svc.from('notifications').select('id').like('dedupe_key', 'announcement:%')).data.length
+    ok(before === after, 'announcement notified twice')
+    const later = (await svc.from('announcements').select('notified_at').like('title', `${P} later`)).data[0]
+    ok(later.notified_at === null, 'scheduled announcement sent early')
+  })
+
+  await t('delegated admin access expires by itself and is announced', async () => {
+    const S = await mkUser('secretary', 'member')
+    noErr(await svc.from('team_members').update({ role: 'super_admin', role_before_admin: 'member', admin_granted_by: E.id, admin_until: new Date(Date.now() - 60000).toISOString() }).eq('id', S.id))
+    const n = noErr(await svc.rpc('expire_admin_delegations'))
+    ok(n >= 1, 'nothing expired')
+    const row = (await svc.from('team_members').select('role, admin_until, role_before_admin').eq('id', S.id).single()).data
+    ok(row.role === 'member' && row.admin_until === null && row.role_before_admin === null, `role not restored: ${JSON.stringify(row)}`)
+    ok((await notes(S, 'admin_expired')).length === 1, 'no expiry notice')
+  })
+
+  await t('a system admin has org-wide read but cannot publish announcements', async () => {
+    const S = await mkUser('admin2', 'super_admin')
+    ok((noErr(await S.client.from('tasks').select('id').eq('id', task1))).length === 1, 'system admin cannot read tasks')
+    if (G) isErr(await S.client.from('announcements').insert({ title: `${P} sneaky`, body: 'x', created_by: S.id }), 'system admin published an announcement')
+  })
+
+  await t('onboarding: new members get the checklist; they tick only their own; templates are admin-only', async () => {
+    const items = (await svc.from('onboarding_items').select('id').eq('active', true)).data
+    ok(items.length >= 1, 'no onboarding items seeded')
+    const N = await mkUser('newbie', 'member')
+    const mine = noErr(await N.client.from('member_onboarding').select('item_id, done_at').eq('member_id', N.id))
+    ok(mine.length === items.length, `expected ${items.length} steps, got ${mine.length}`)
+    const done = await N.client.from('member_onboarding').update({ done_at: new Date().toISOString() }).eq('member_id', N.id).eq('item_id', mine[0].item_id).select('item_id')
+    ok(!done.error && done.data.length === 1, 'could not tick own step')
+    const theirs = await N.client.from('member_onboarding').update({ done_at: new Date().toISOString() }).eq('member_id', M.id).select('item_id')
+    ok(!theirs.error && theirs.data.length === 0, 'ticked someone else\'s step')
+    isErr(await N.client.from('onboarding_items').insert({ title: `${P} step` }), 'member edited onboarding template')
+    const w = await N.client.from('org_settings').upsert({ key: 'welcome_message', value: 'hacked' })
+    ok(w.error, 'member changed the welcome message')
+    ok((noErr(await N.client.from('org_settings').select('value').eq('key', 'welcome_message'))).length === 1, 'member cannot read the welcome message')
+  })
+
+  await t('campaigns log is not readable by ordinary members', async () => {
+    const c = noErr(await svc.from('campaigns').insert({ title: `${P} camp`, body: 'x', audience: 'all', sent_by: E.id }).select('id').single())
+    ok((noErr(await M.client.from('campaigns').select('id').eq('id', c.id))).length === 0, 'member reads campaigns')
+    await svc.from('campaigns').delete().eq('id', c.id)
+  })
+
 }
 
 async function cleanup() {
@@ -239,6 +328,8 @@ async function cleanup() {
     await svc.from('attachments').delete().in('uploaded_by', ids)
     await svc.from('tasks').delete().like('title', `${P}%`)
     await svc.from('decisions').delete().like('title', `${P}%`)
+    await svc.from('announcements').delete().like('title', `${P}%`)
+    await svc.from('campaigns').delete().like('title', `${P}%`)
     await svc.from('meetings').delete().like('title', `${P}%`)
     await svc.from('messages').delete().like('body', `${P}%`)
     await svc.from('projects').delete().like('name', `${P}%`)

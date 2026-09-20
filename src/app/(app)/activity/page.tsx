@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic'
 
 const TYPES = [
   ['', 'Everything'], ['task', 'Tasks'], ['project', 'Projects'], ['meeting', 'Meetings'],
-  ['decision', 'Decisions'], ['report', 'Reports'], ['resource', 'Files'], ['member', 'People'],
+  ['decision', 'Decisions'], ['report', 'Reports'], ['resource', 'Files'], ['member', 'People'], ['announcement', 'Announcements'], ['campaign', 'Campaigns'],
 ] as const
 
 const PAGE = 100
@@ -22,6 +22,8 @@ function hrefFor(a: ActivityEntry): string | null {
     case 'meeting': return `/meetings/${a.entity_id}`
     case 'report': return `/reports/${a.entity_id}`
     case 'decision': return '/decisions'
+    case 'announcement': return '/announcements'
+    case 'campaign': return null
     case 'resource': return '/resources'
     case 'member': return `/people/${a.entity_id}`
     default: return null

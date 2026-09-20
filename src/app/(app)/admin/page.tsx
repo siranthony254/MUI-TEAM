@@ -30,7 +30,7 @@ function Health({ ok, label, detail }: { ok: boolean | null; label: string; deta
 }
 
 export default async function AdminHome() {
-  await requireRole('super_admin')
+  const me = await requireRole('super_admin')
   const admin = createAdminClient()
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
 
@@ -52,10 +52,12 @@ export default async function AdminHome() {
   const runAgeMin = run ? (Date.now() - new Date(run.ran_at).getTime()) / 60000 : null
   const schedulerOk = run ? runAgeMin! <= 15 && !run.error : false
   const noPhones = active.filter((m) => m.notify_sms && !m.phone).length
+  const director = active.find((m) => m.is_director)
+  const topRolesLocked = !!director && !me.is_director
 
   return (
     <>
-      <PageTitle sub="Only Super Admins can see this area.">Administration</PageTitle>
+      <PageTitle sub="System administration: people, roles, onboarding, campaigns and platform health.">System admin</PageTitle>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Stat label="Active users" value={active.length} sub={`${people.length - active.length} inactive`} />
@@ -65,6 +67,17 @@ export default async function AdminHome() {
         <Stat label="Notifications (24h)" value={sent24.count ?? 0} />
         <Stat label="Awaiting delivery" value={pending.count ?? 0} tone={(pending.count ?? 0) > 20 ? 'text-orange-600' : ''} />
       </div>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+        <Link href="/admin/onboarding"><Card className="h-full transition hover:border-amber-400"><p className="font-semibold">Onboarding</p><p className="mt-0.5 text-xs text-neutral-500">Welcome message and the checklist new members get.</p></Card></Link>
+        <Link href="/admin/campaigns"><Card className="h-full transition hover:border-amber-400"><p className="font-semibold">Campaigns</p><p className="mt-0.5 text-xs text-neutral-500">Send a message to part of the team.</p></Card></Link>
+        <Link href="/analytics"><Card className="h-full transition hover:border-amber-400"><p className="font-semibold">Analytics</p><p className="mt-0.5 text-xs text-neutral-500">Organisation-wide command centre.</p></Card></Link>
+      </div>
+
+      <Card className="mt-4">
+        <SectionTitle>Executive Director</SectionTitle>
+        <p className="text-sm">{director ? <><strong>{director.full_name}</strong>{director.title ? ` — ${director.title}` : ''}. Only they can publish official announcements and delegate system-admin access.</> : <span className="text-neutral-600">Not set yet. Add the Executive Director as a member below (or open their profile and tick &ldquo;Executive Director&rdquo;) so the initiative&apos;s leader has their own desk. Until then, a system admin can set this up.</span>}</p>
+      </Card>
 
       <Card className="mt-4">
         <SectionTitle>System health</SectionTitle>
@@ -107,6 +120,7 @@ export default async function AdminHome() {
         <AddMemberForm
           departments={(departments.data ?? []).map((d) => ({ id: d.id, label: d.name }))}
           people={active.map((m) => ({ id: m.id, label: m.full_name }))}
+          topRolesLocked={topRolesLocked}
         />
       </Card>
 

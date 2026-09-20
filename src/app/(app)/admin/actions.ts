@@ -15,6 +15,31 @@ const lines = (v: FormDataEntryValue | null) =>
 
 const tempPassword = () => randomBytes(9).toString('base64url')
 
+type Admin = ReturnType<typeof createAdminClient>
+
+async function directorExists(admin: Admin) {
+  const { count } = await admin.from('team_members').select('id', { count: 'exact', head: true }).eq('is_director', true).eq('active', true)
+  return (count ?? 0) > 0
+}
+
+/**
+ * Handing out system-admin access, or naming the Executive Director, is the Director's call.
+ * Until a Director exists, a system admin may set the very first one up.
+ */
+async function mayManageTopRoles(admin: Admin, actor: { is_director: boolean }) {
+  return actor.is_director || !(await directorExists(admin))
+}
+
+/** Make `id` the Executive Director (there is only ever one) or stand them down. */
+async function applyDirector(admin: Admin, id: string, want: boolean) {
+  if (want) {
+    await admin.from('team_members').update({ is_director: false }).eq('is_director', true).neq('id', id)
+    await admin.from('team_members').update({ is_director: true }).eq('id', id)
+  } else {
+    await admin.from('team_members').update({ is_director: false }).eq('id', id)
+  }
+}
+
 /** These run with the service role (no browser session), so we record who did what ourselves. */
 async function log(
   actor: string, action: string, entityType: string, entityId: string, summary: string,
@@ -41,8 +66,13 @@ export async function addMember(_prev: AdminState | undefined, formData: FormDat
   const reports_to = String(formData.get('reports_to') ?? '') || null
   if (!email || !full_name) return { error: 'Name and email are required.' }
   if (!ROLES.includes(role)) return { error: 'Invalid role.' }
+  const wantsDirector = formData.get('is_director') === 'on'
 
   const admin = createAdminClient()
+  if ((role === 'super_admin' || wantsDirector) && !(await mayManageTopRoles(admin, me))) {
+    return { error: "Only the Executive Director can give system-admin access or name a new Director. Use the Director's desk." }
+  }
+  if (wantsDirector && role !== 'executive') return { error: 'The Executive Director should hold the Executive access level.' }
   const password = tempPassword()
 
   // The person may already have a website account (same Supabase project).
@@ -65,6 +95,7 @@ export async function addMember(_prev: AdminState | undefined, formData: FormDat
   })
   if (insertError) return { error: insertError.message }
 
+  if (wantsDirector) await applyDirector(admin, userId!, true)
   await log(me.id, 'member.added', 'member', userId!, `${me.full_name} added ${full_name} to the team as ${role.replace('_', ' ')}`)
   revalidatePath('/admin')
   revalidatePath('/people')
@@ -85,7 +116,18 @@ export async function updateMember(_prev: AdminState | undefined, formData: Form
   }
 
   const admin = createAdminClient()
-  const { data: before } = await admin.from('team_members').select('role, department_id, full_name').eq('id', id).maybeSingle()
+  const { data: before } = await admin.from('team_members').select('role, department_id, full_name, is_director').eq('id', id).maybeSingle()
+  if (!before) return { error: 'Member not found.' }
+
+  const wantsDirector = formData.get('is_director') === 'on'
+  const touchesTopRole = (role === 'super_admin') !== (before.role === 'super_admin') || wantsDirector !== before.is_director
+  if (touchesTopRole && !(await mayManageTopRoles(admin, me))) {
+    return { error: "Only the Executive Director can change system-admin access or the Director role. Use the Director's desk." }
+  }
+  if (wantsDirector && role !== 'executive') return { error: 'The Executive Director should hold the Executive access level.' }
+  if (!wantsDirector && before.is_director && !me.is_director) {
+    return { error: 'Only the Executive Director can step down or hand the role on.' }
+  }
 
   const { error } = await admin.from('team_members').update({
     full_name: String(formData.get('full_name') ?? '').trim(),
@@ -100,6 +142,11 @@ export async function updateMember(_prev: AdminState | undefined, formData: Form
     deliverables: lines(formData.get('deliverables')),
   }).eq('id', id)
   if (error) return { error: error.message }
+  if (wantsDirector !== before.is_director) {
+    await applyDirector(admin, id, wantsDirector)
+    await log(me.id, 'member.director_changed', 'member', id,
+      wantsDirector ? `${me.full_name} named ${before.full_name} Executive Director` : `${before.full_name} is no longer Executive Director`)
+  }
 
   if (before && before.role !== role) {
     await log(me.id, 'member.role_changed', 'member', id,
@@ -136,6 +183,10 @@ export async function deactivateMember(_prev: AdminState | undefined, formData: 
   const reassignTo = String(formData.get('reassign_to') ?? '')
   if (id === me.id) return { error: 'You can\'t deactivate yourself.' }
   if (!reassignTo || reassignTo === id) return { error: 'Choose who takes over their open work.' }
+  if (!me.is_director) {
+    const { data: t } = await createAdminClient().from('team_members').select('is_director').eq('id', id).maybeSingle()
+    if (t?.is_director) return { error: "Only the Executive Director can step down. A system admin can't deactivate them." }
+  }
 
   const admin = createAdminClient()
   const [{ data: leaver }, { data: heir }] = await Promise.all([

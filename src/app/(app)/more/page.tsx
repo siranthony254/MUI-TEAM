@@ -5,7 +5,7 @@ import { Card, PageTitle } from '@/components/ui'
 
 export default async function More() {
   const me = await requireMember()
-  const items = visibleItems(me.role).filter((i) => !MOBILE_PRIMARY.includes(i.href))
+  const items = visibleItems(me.role, me.is_director).filter((i) => !MOBILE_PRIMARY.includes(i.href))
   return (
     <>
       <PageTitle>More</PageTitle>

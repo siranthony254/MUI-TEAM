@@ -5,9 +5,9 @@ import { usePathname } from 'next/navigation'
 import { Menu } from 'lucide-react'
 import { MOBILE_PRIMARY, visibleItems } from './nav-items'
 
-export function Nav({ role, unread, chatUnread }: { role: 'super_admin' | 'executive' | 'member'; unread: number; chatUnread: number }) {
+export function Nav({ role, isDirector, unread, chatUnread }: { role: 'super_admin' | 'executive' | 'member'; isDirector: boolean; unread: number; chatUnread: number }) {
   const path = usePathname()
-  const items = visibleItems(role)
+  const items = visibleItems(role, isDirector)
   const active = (href: string) => (href === '/' ? path === '/' : path.startsWith(href))
   const primary = items.filter((i) => MOBILE_PRIMARY.includes(i.href))
   const moreActive = !primary.some((i) => active(i.href))

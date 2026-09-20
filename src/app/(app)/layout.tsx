@@ -21,12 +21,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex min-h-screen bg-neutral-50 text-neutral-900">
-      <Nav role={me.role} unread={count ?? 0} chatUnread={chatUnread} />
+      <Nav role={me.role} isDirector={me.is_director} unread={count ?? 0} chatUnread={chatUnread} />
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center justify-between gap-3 border-b border-neutral-200 bg-white px-4 py-3">
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold">{me.full_name}</p>
-            <p className="truncate text-xs text-neutral-500">{me.title ?? ROLE_LABEL[me.role]}</p>
+            <p className="truncate text-xs text-neutral-500">{me.title ?? ROLE_LABEL[me.role]}{me.is_director ? ' · Executive Director' : ''}</p>
           </div>
           <div className="flex items-center gap-2">
             <Link href="/tasks/new"

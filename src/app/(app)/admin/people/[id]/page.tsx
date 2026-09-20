@@ -17,6 +17,8 @@ export default async function EditMember({ params }: { params: Promise<{ id: str
   const { data } = await supabase.from('team_members').select('*').eq('id', id).maybeSingle()
   if (!data) notFound()
   const member = data as TeamMember
+  const { count: directors } = await supabase.from('team_members').select('id', { count: 'exact', head: true }).eq('is_director', true).eq('active', true)
+  const topRolesLocked = (directors ?? 0) > 0 && !me.is_director
   const [{ data: departments }, { data: others }] = await Promise.all([
     supabase.from('departments').select('id, name').order('name'),
     supabase.from('team_members').select('id, full_name').neq('id', id).eq('active', true).order('full_name'),
@@ -37,6 +39,7 @@ export default async function EditMember({ params }: { params: Promise<{ id: str
           member={member}
           departments={(departments ?? []).map((d) => ({ id: d.id, label: d.name }))}
           people={(others ?? []).map((p) => ({ id: p.id, label: p.full_name }))}
+          topRolesLocked={topRolesLocked}
         />
       </Card>
 

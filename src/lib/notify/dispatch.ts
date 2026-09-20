@@ -3,7 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { channelEnabled, normalizePhone, sendEmail, sendPush, sendSms, type PushSub } from './channels'
 
 /** SMS costs money: only these kinds are worth a text. */
-const SMS_KINDS = new Set(['task_assigned', 'due_today', 'overdue', 'overdue_1d', 'overdue_escalation'])
+const SMS_KINDS = new Set(['task_assigned', 'due_today', 'overdue', 'overdue_1d', 'overdue_escalation', 'announcement_urgent'])
 
 const MAX_ATTEMPTS = 3
 const BATCH = 100
@@ -62,6 +62,9 @@ export async function runDispatch(): Promise<DispatchResult> {
     // Recurring tasks first, so the new occurrence can be reminded about in the same run.
     const { data: made } = await admin.rpc('spawn_recurring_tasks')
     spawned = (made as number | null) ?? 0
+    // Housekeeping first: delegated admin access that has run out, and announcements whose time has come.
+    await admin.rpc('expire_admin_delegations')
+    await admin.rpc('publish_due_announcements')
     const { data: reminderCount } = await admin.rpc('generate_task_reminders')
     reminders = (reminderCount as number | null) ?? 0
     const result = await dispatchPending()
