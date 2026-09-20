@@ -9,7 +9,7 @@ export const metadata = { title: 'Welcome' }
 
 export default async function Welcome() {
   const me = await requireMember()
-  if (me.profile_completed_at) redirect('/')
+  if (me.profile_completed_at !== null) redirect('/')
 
   const supabase = await createClient()
   const [{ data: dept }, { data: boss }, { data: priv }, { data: welcome }] = await Promise.all([

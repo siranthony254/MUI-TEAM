@@ -15,7 +15,8 @@ import { GuestGate } from '@/components/GuestGate'
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const me = await requireMember()
   // New members finish their profile first.
-  if (!me.profile_completed_at) redirect('/welcome')
+  // (Only an explicit null means "not set up": before migration 9 the column doesn't exist and everyone is treated as done.)
+  if (me.profile_completed_at === null) redirect('/welcome')
   const supabase = await createClient()
   const { data: orgRow } = await supabase.from('org_settings').select('value').eq('key', 'org_name').maybeSingle()
   const muted = await mutedKinds(supabase, me.id)
