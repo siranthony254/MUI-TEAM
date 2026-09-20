@@ -1,6 +1,7 @@
 'use client'
 
 import { useActionState, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { buttonClass, inputClass } from '@/components/ui'
 import { createClient } from '@/lib/supabase/client'
 import { RESOURCE_CATEGORIES } from '@/lib/types'
@@ -27,7 +28,8 @@ function CategoryAndVisibility() {
   )
 }
 
-export function UploadFileForm() {
+export function UploadFileForm({ projectId }: { projectId?: string }) {
+  const router = useRouter()
   const formRef = useRef<HTMLFormElement>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -57,10 +59,12 @@ export function UploadFileForm() {
         description: String(form.get('description') ?? ''),
         category: String(form.get('category') ?? ''),
         visibility: String(form.get('visibility') ?? 'everyone'),
+        projectId,
       })
       if (res.error) throw new Error(res.error)
       setOk('Uploaded.')
       formRef.current?.reset()
+      router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong.')
     } finally {
@@ -87,10 +91,11 @@ export function UploadFileForm() {
   )
 }
 
-export function AddLinkForm() {
+export function AddLinkForm({ projectId }: { projectId?: string }) {
   const [state, action, pending] = useActionState(addLinkResource, undefined)
   return (
     <form action={action} className="space-y-3" key={state?.ok ? 'done' : 'open'}>
+      {projectId && <input type="hidden" name="project_id" value={projectId} />}
       <label className="block text-sm font-medium">Link (Google Drive, Notion, a website…)
         <input name="url" required placeholder="https://" className={inputClass} />
       </label>

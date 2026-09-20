@@ -4,7 +4,9 @@ import { useActionState } from 'react'
 import { buttonClass, inputClass } from '@/components/ui'
 import { addMember } from './actions'
 
-export function AddMemberForm() {
+interface Option { id: string; label: string }
+
+export function AddMemberForm({ departments, people }: { departments: Option[]; people: Option[] }) {
   const [state, action, pending] = useActionState(addMember, undefined)
   return (
     <form action={action} className="space-y-3">
@@ -17,6 +19,18 @@ export function AddMemberForm() {
             <option value="member">Team Member</option>
             <option value="executive">Executive</option>
             <option value="super_admin">Super Admin</option>
+          </select>
+        </label>
+        <label className="block text-sm font-medium">Department
+          <select name="department_id" defaultValue="" className={inputClass}>
+            <option value="">None</option>
+            {departments.map((d) => <option key={d.id} value={d.id}>{d.label}</option>)}
+          </select>
+        </label>
+        <label className="block text-sm font-medium">Reports to
+          <select name="reports_to" defaultValue="" className={inputClass}>
+            <option value="">No one</option>
+            {people.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
           </select>
         </label>
       </div>

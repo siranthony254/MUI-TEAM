@@ -39,7 +39,7 @@ export default async function Analytics() {
       supabase.from('tasks').select('*, updated_at'),
       supabase.from('projects').select('*'),
       supabase.from('departments').select('id, name'),
-      supabase.from('reports').select('author_id, status').eq('period_start', month.start).eq('status', 'submitted'),
+      supabase.from('reports').select('author_id, status').eq('kind', 'personal').gte('period_start', month.start).lte('period_start', month.end).eq('status', 'submitted'),
     ])
 
   const members = (memberRows ?? []) as TeamMember[]

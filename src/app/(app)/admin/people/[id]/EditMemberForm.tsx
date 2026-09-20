@@ -50,9 +50,6 @@ export function EditMemberForm({
       <label className="block text-sm font-medium">Deliverables (one per line)
         <textarea name="deliverables" rows={4} defaultValue={member.deliverables.join('\n')} className={inputClass} />
       </label>
-      <label className="flex items-center gap-2 text-sm">
-        <input type="checkbox" name="active" defaultChecked={member.active} /> Active (uncheck to remove their access)
-      </label>
       {state?.error && <p role="alert" className="text-sm text-red-600">{state.error}</p>}
       {state?.ok && <p role="status" className="text-sm text-green-700">{state.ok}</p>}
       <button disabled={pending} className={buttonClass}>{pending ? 'Saving…' : 'Save'}</button>

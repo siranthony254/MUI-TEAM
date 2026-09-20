@@ -21,6 +21,8 @@ export async function createDecision(_prev: DecisionState | undefined, fd: FormD
     rationale: text(fd, 'rationale'),
     decided_by: text(fd, 'decided_by') ?? 'Executive Team',
     decided_on: text(fd, 'decided_on') ?? undefined,
+    implementation_owner_id: text(fd, 'implementation_owner_id'),
+    project_id: text(fd, 'project_id'),
     created_by: me.id,
   })
   if (error) return { error: error.message }

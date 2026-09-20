@@ -36,8 +36,9 @@ export function allowedTransitions(task: Task, me: TeamMember): Transition[] {
       out.push({ to: 'in_progress', label: 'Start work', tone: 'primary' })
     if (task.status === 'in_progress')
       out.push({
-        to: isReviewer ? 'completed' : 'submitted',
-        label: isReviewer ? 'Mark complete' : 'Submit for review',
+        // Work that needs no sign-off (or that you assigned yourself) can be completed directly.
+        to: isReviewer || !task.require_approval ? 'completed' : 'submitted',
+        label: isReviewer || !task.require_approval ? 'Mark complete' : 'Submit for review',
         needsNote: task.requires_evidence,
         tone: 'primary',
       })

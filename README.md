@@ -46,3 +46,14 @@ SMS is only sent for due-today / overdue reminders to control cost.
   category. Downloads go through `/resources/[id]/download`, which checks access and issues a 60-second signed URL.
 
 Run migration `20260920000004_chat_calendar_resources.sql`. It also creates the private `resources` storage bucket.
+
+## Completed areas (migration 5)
+
+- **Delegation** reassigns the task and keeps the chain (original assignee → delegated by → current assignee) on the record;
+  the delegator sees it under My Work → Delegated. The assigner can also reassign. Only unsubmitted work can be handed on.
+- **Tasks** carry department, start date, tags, weight, recurrence and a "require approval" switch, plus attachments.
+  A recurring task creates its next occurrence when the current one is completed (done by the scheduler).
+- **Projects** have a detail page (overview, tasks, team, calendar, files, discussion, activity). Progress is weighted.
+- **Activity log** is structured (field, before, after) and covers tasks, projects, meetings, decisions, reports, files, and admin actions.
+- **Admin**: dashboard with system health, reset access, deactivate with automatic hand-over of open work, reactivate.
+- **Scheduler run log**: each `/api/cron/dispatch` run is recorded so the admin dashboard can tell you if reminders stopped.

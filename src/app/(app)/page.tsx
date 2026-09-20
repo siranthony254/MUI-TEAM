@@ -37,6 +37,13 @@ export default async function Dashboard() {
     .eq('assigned_by', me.id)
     .in('status', ['submitted', 'under_review'])
 
+  // Work I handed on and am still waiting for.
+  const { count: delegatedOut } = await supabase
+    .from('tasks')
+    .select('id', { count: 'exact', head: true })
+    .eq('delegated_by', me.id)
+    .not('status', 'in', '(completed,closed)')
+
   const { data: nextMeetings } = await supabase
     .from('meetings')
     .select('id, title, starts_at')
@@ -72,6 +79,12 @@ export default async function Dashboard() {
           </Link>
         ))}
       </div>
+
+      {(delegatedOut ?? 0) > 0 && (
+        <Link href="/tasks?filter=delegated" className="mt-4 block rounded-xl border border-neutral-200 bg-white p-4 text-sm text-neutral-700">
+          <strong>{delegatedOut}</strong> delegated {delegatedOut === 1 ? 'task is' : 'tasks are'} awaiting others →
+        </Link>
+      )}
 
       {isExecOrAbove(me) && (toReview ?? 0) > 0 && (
         <Link href="/tasks?filter=review" className="mt-4 block rounded-xl border border-purple-200 bg-purple-50 p-4 text-sm text-purple-900">
@@ -127,8 +140,8 @@ export default async function Dashboard() {
         <p className="mt-1 font-medium">{me.title ?? 'Team member'}</p>
         {me.mandate ? <p className="mt-1 text-sm text-neutral-600">{me.mandate}</p>
           : <p className="mt-1 text-sm text-neutral-500">Your mandate hasn&apos;t been set yet. Ask an administrator to define it.</p>}
-        <Link href={`/people/${me.id}`} className="mt-2 inline-block text-sm font-medium text-amber-700 hover:underline">
-          View my role profile →
+        <Link href="/responsibilities" className="mt-2 inline-block text-sm font-medium text-amber-700 hover:underline">
+          See my full role, responsibilities and commitments →
         </Link>
       </Card>
     </>

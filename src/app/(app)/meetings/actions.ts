@@ -92,7 +92,12 @@ export async function recordDecision(_prev: MeetingState | undefined, fd: FormDa
   if (!title || !decision) return { error: 'A decision needs a title and the decision itself.' }
 
   const supabase = await createClient()
+  const meetingId = text(fd, 'meeting_id')
+  const { data: meeting } = meetingId
+    ? await supabase.from('meetings').select('project_id').eq('id', meetingId).maybeSingle()
+    : { data: null }
   const { error } = await supabase.from('decisions').insert({
+    project_id: meeting?.project_id ?? null,
     title, decision,
     rationale: text(fd, 'rationale'),
     decided_by: text(fd, 'decided_by') ?? 'Executive Team',

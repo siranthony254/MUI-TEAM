@@ -20,7 +20,7 @@ export default async function Resources({
   const me = await requireMember()
   const supabase = await createClient()
 
-  let query = supabase.from('resources').select('*').order('created_at', { ascending: false })
+  let query = supabase.from('resources').select('*').is('project_id', null).order('created_at', { ascending: false })
   if (category && (RESOURCE_CATEGORIES as readonly string[]).includes(category)) query = query.eq('category', category)
   if (q?.trim()) query = query.ilike('title', `%${q.trim().replace(/[%_]/g, '')}%`)
   const { data } = await query

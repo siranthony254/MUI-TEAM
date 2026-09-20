@@ -41,6 +41,19 @@ export interface Task {
   submitted_at: string | null
   completed_at: string | null
   created_at: string
+  updated_at: string
+  meeting_id: string | null
+  department_id: string | null
+  tags: string[]
+  weight: number
+  require_approval: boolean
+  recurrence: 'none' | 'daily' | 'weekly' | 'monthly'
+  recurrence_until: string | null
+  recurrence_parent_id: string | null
+  original_assignee_id: string | null
+  delegated_by: string | null
+  delegated_at: string | null
+  delegation_note: string | null
 }
 
 export interface Project {
@@ -104,6 +117,9 @@ export interface Decision {
   superseded_by: string | null
   meeting_id: string | null
   created_by: string | null
+  number: number
+  implementation_owner_id: string | null
+  project_id: string | null
 }
 
 export interface Report {
@@ -119,6 +135,7 @@ export interface Report {
   recommendations: string | null
   status: 'draft' | 'submitted'
   submitted_at: string | null
+  kind: 'personal' | 'department'
 }
 
 export interface Channel {
@@ -171,4 +188,35 @@ export interface Resource {
   visibility: 'everyone' | 'executive'
   uploaded_by: string | null
   created_at: string
+  project_id: string | null
 }
+
+export interface Attachment {
+  id: string
+  entity_type: 'task' | 'report' | 'decision'
+  entity_id: string
+  kind: 'file' | 'link'
+  url: string | null
+  storage_path: string | null
+  file_name: string | null
+  mime_type: string | null
+  size_bytes: number | null
+  uploaded_by: string | null
+  created_at: string
+}
+
+export interface ActivityEntry {
+  id: string
+  actor_id: string | null
+  action: string
+  entity_type: string
+  entity_id: string | null
+  summary: string
+  field: string | null
+  from_value: string | null
+  to_value: string | null
+  project_id: string | null
+  created_at: string
+}
+
+export interface Department { id: string; name: string; description: string | null }

@@ -31,8 +31,8 @@ const LABEL: Record<Kind, string> = {
 const timeOf = (iso: string) =>
   new Date(iso).toLocaleTimeString('en-KE', { timeZone: TZ, hour: '2-digit', minute: '2-digit', hour12: false })
 
-export default async function Calendar({ searchParams }: { searchParams: Promise<{ m?: string }> }) {
-  const { m } = await searchParams
+export default async function Calendar({ searchParams }: { searchParams: Promise<{ m?: string; scope?: string }> }) {
+  const { m, scope: rawScope } = await searchParams
   const me = await requireMember()
   const supabase = await createClient()
 
@@ -44,9 +44,21 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
   const to = `${next.year}-${String(next.month).padStart(2, '0')}-01T00:00:00+03:00`
   const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate()
 
+  // Whose deadlines to show: just mine, my department's, or (executives) everyone I can see.
+  const scope = rawScope === 'team' && isExecOrAbove(me) ? 'team' : rawScope === 'department' && me.department_id ? 'department' : 'mine'
+  const { data: peers } = scope === 'department'
+    ? await supabase.from('team_members').select('id').eq('department_id', me.department_id!).eq('active', true)
+    : { data: null }
+  const { data: allMembers } = await supabase.from('team_members').select('id, full_name')
+  const short = (id: string | null) => (allMembers ?? []).find((x) => x.id === id)?.full_name?.split(' ')[0] ?? ''
+
+  let taskQuery = supabase.from('tasks').select('id, title, due_at, status, assignee_id')
+    .not('status', 'in', '(completed,closed)').gte('due_at', from).lt('due_at', to)
+  if (scope === 'mine') taskQuery = taskQuery.eq('assignee_id', me.id)
+  if (scope === 'department') taskQuery = taskQuery.in('assignee_id', (peers ?? []).map((p) => p.id))
+
   const [{ data: tasks }, { data: meetings }, { data: events }, { data: projects }] = await Promise.all([
-    supabase.from('tasks').select('id, title, due_at, status').eq('assignee_id', me.id)
-      .not('status', 'in', '(completed,closed)').gte('due_at', from).lt('due_at', to),
+    taskQuery,
     supabase.from('meetings').select('id, title, starts_at, status').neq('status', 'cancelled').gte('starts_at', from).lt('starts_at', to),
     supabase.from('calendar_events').select('*').gte('starts_at', from).lt('starts_at', to),
     supabase.from('projects').select('id, name, due_date, status').neq('status', 'done')
@@ -54,14 +66,17 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
   ])
 
   const items: Item[] = [
-    ...((tasks ?? []) as Task[]).map((t) => ({ day: dayKey(t.due_at!), time: timeOf(t.due_at!), title: t.title, href: `/tasks/${t.id}`, kind: 'task' as const })),
+    ...((tasks ?? []) as Task[]).map((t) => ({
+      day: dayKey(t.due_at!), time: timeOf(t.due_at!), kind: 'task' as const, href: `/tasks/${t.id}`,
+      title: scope === 'mine' ? t.title : `${t.title} (${short(t.assignee_id)})`,
+    })),
     ...((meetings ?? []) as Meeting[]).map((x) => ({ day: dayKey(x.starts_at), time: timeOf(x.starts_at), title: x.title, href: `/meetings/${x.id}`, kind: 'meeting' as const })),
     ...((events ?? []) as CalendarEvent[]).map((e) => ({
-      day: dayKey(e.starts_at), time: e.all_day ? null : timeOf(e.starts_at), title: e.title, href: null, kind: e.kind,
+      day: dayKey(e.starts_at), time: e.all_day ? null : timeOf(e.starts_at), title: e.title, kind: e.kind,
       sub: [e.description, e.visibility === 'executive' ? 'Executives only' : null].filter(Boolean).join(' · ') || undefined,
-      eventId: e.id, canDelete: me.role === 'super_admin' || e.created_by === me.id,
+      eventId: e.id, canDelete: me.role === 'super_admin' || e.created_by === me.id, href: `/calendar/events/${e.id}`,
     })),
-    ...((projects ?? []) as Project[]).map((p) => ({ day: p.due_date!, time: null, title: p.name, href: '/projects', kind: 'project' as const })),
+    ...((projects ?? []) as Project[]).map((p) => ({ day: p.due_date!, time: null, title: p.name, href: `/projects/${p.id}`, kind: 'project' as const })),
   ].sort((a, b) => a.day.localeCompare(b.day) || (a.time ?? '').localeCompare(b.time ?? ''))
 
   const byDay = new Map<string, Item[]>()
@@ -80,13 +95,22 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
     <>
       <PageTitle sub="Your tasks, meetings, project deadlines and team events in one place.">Calendar</PageTitle>
 
+      <div className="mb-3 flex gap-2">
+        {([['mine', 'Mine'], ...(me.department_id ? [['department', 'My department']] : []), ...(isExecOrAbove(me) ? [['team', 'Whole team']] : [])] as [string, string][]).map(([k, label]) => (
+          <Link key={k} href={`/calendar?scope=${k}&m=${monthParam(year, month)}`}
+            className={`rounded-full border px-3 py-1 text-sm ${scope === k ? 'border-[#0D1F35] bg-[#0D1F35] text-white' : 'border-neutral-300 bg-white text-neutral-700'}`}>
+            {label}
+          </Link>
+        ))}
+      </div>
+
       <div className="mb-4 flex items-center justify-between">
-        <Link href={`/calendar?m=${monthParam(prev.year, prev.month)}`} aria-label="Previous month" className="rounded-lg p-2 hover:bg-neutral-100"><ChevronLeft size={20} /></Link>
+        <Link href={`/calendar?scope=${scope}&m=${monthParam(prev.year, prev.month)}`} aria-label="Previous month" className="rounded-lg p-2 hover:bg-neutral-100"><ChevronLeft size={20} /></Link>
         <div className="text-center">
           <p className="font-semibold">{monthName}</p>
-          <Link href="/calendar" className="text-xs text-amber-700 hover:underline">Today</Link>
+          <Link href={`/calendar?scope=${scope}`} className="text-xs text-amber-700 hover:underline">Today</Link>
         </div>
-        <Link href={`/calendar?m=${monthParam(next.year, next.month)}`} aria-label="Next month" className="rounded-lg p-2 hover:bg-neutral-100"><ChevronRight size={20} /></Link>
+        <Link href={`/calendar?scope=${scope}&m=${monthParam(next.year, next.month)}`} aria-label="Next month" className="rounded-lg p-2 hover:bg-neutral-100"><ChevronRight size={20} /></Link>
       </div>
 
       {/* Month grid (larger screens) */}

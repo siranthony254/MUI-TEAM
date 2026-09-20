@@ -3,7 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { channelEnabled, normalizePhone, sendEmail, sendPush, sendSms, type PushSub } from './channels'
 
 /** SMS costs money: only these kinds are worth a text. */
-const SMS_KINDS = new Set(['due_today', 'overdue', 'overdue_1d', 'overdue_escalation'])
+const SMS_KINDS = new Set(['task_assigned', 'due_today', 'overdue', 'overdue_1d', 'overdue_escalation'])
 
 const MAX_ATTEMPTS = 3
 const BATCH = 100
@@ -25,6 +25,7 @@ interface Row {
   body: string | null
   link: string | null
   delivery_attempts: number
+  channels: string[] | null
   email_sent_at: string | null
   push_sent_at: string | null
   sms_sent_at: string | null
@@ -41,6 +42,7 @@ interface Row {
 
 export interface DispatchResult {
   reminders: number
+  spawned: number
   processed: number
   sent: Record<Channel, number>
   failed: number
@@ -54,12 +56,26 @@ export interface DispatchResult {
 export async function runDispatch(): Promise<DispatchResult> {
   const admin = createAdminClient()
 
-  const { data: reminderCount } = await admin.rpc('generate_task_reminders')
-  const result = await dispatchPending()
-  return { ...result, reminders: (reminderCount as number | null) ?? 0 }
+  let reminders = 0
+  let spawned = 0
+  try {
+    // Recurring tasks first, so the new occurrence can be reminded about in the same run.
+    const { data: made } = await admin.rpc('spawn_recurring_tasks')
+    spawned = (made as number | null) ?? 0
+    const { data: reminderCount } = await admin.rpc('generate_task_reminders')
+    reminders = (reminderCount as number | null) ?? 0
+    const result = await dispatchPending()
+    await admin.from('system_runs').insert({ reminders, spawned, sent: result.sent, failed: result.failed })
+    return { ...result, reminders, spawned }
+  } catch (err) {
+    await admin.from('system_runs').insert({
+      reminders, spawned, error: err instanceof Error ? err.message.slice(0, 500) : 'unknown error',
+    })
+    throw err
+  }
 }
 
-export async function dispatchPending(): Promise<Omit<DispatchResult, 'reminders'>> {
+export async function dispatchPending(): Promise<Omit<DispatchResult, "reminders" | "spawned">> {
   const admin = createAdminClient()
   const out = { processed: 0, sent: { email: 0, push: 0, sms: 0 }, failed: 0 }
 
@@ -67,7 +83,7 @@ export async function dispatchPending(): Promise<Omit<DispatchResult, 'reminders
   const { data } = await admin
     .from('notifications')
     .select(
-      'id, recipient_id, kind, title, body, link, delivery_attempts, email_sent_at, push_sent_at, sms_sent_at, ' +
+      'id, recipient_id, kind, title, body, link, delivery_attempts, channels, email_sent_at, push_sent_at, sms_sent_at, ' +
       'recipient:team_members!notifications_recipient_id_fkey(full_name, email, phone, active, notify_email, notify_push, notify_sms)',
     )
     .gte('created_at', since)
@@ -116,12 +132,17 @@ export async function dispatchPending(): Promise<Omit<DispatchResult, 'reminders
       }
     }
 
-    await run('email', !!who?.notify_email && !!who?.email, () => sendEmail(who!.email, who!.full_name, msg))
+    // A sender can narrow the channels for an assignment/delegation; the recipient's own
+    // opt-ins still apply on top (nobody gets SMS without opting in and having a number).
+    const allowed = (ch: Channel) => !row.channels || row.channels.includes(ch)
+
+    await run('email', allowed('email') && !!who?.notify_email && !!who?.email, () => sendEmail(who!.email, who!.full_name, msg))
 
     const phone = normalizePhone(who?.phone ?? null)
-    await run('sms', !!who?.notify_sms && !!phone && SMS_KINDS.has(row.kind), () => sendSms(phone!, msg))
+    const smsWorthy = SMS_KINDS.has(row.kind) || !!row.channels?.includes('sms')
+    await run('sms', allowed('sms') && !!who?.notify_sms && !!phone && smsWorthy, () => sendSms(phone!, msg))
 
-    await run('push', !!who?.notify_push, async () => {
+    await run('push', allowed('push') && !!who?.notify_push, async () => {
       const { data: subs } = await admin
         .from('push_subscriptions')
         .select('endpoint, p256dh, auth, member_id')
