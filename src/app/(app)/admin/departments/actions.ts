@@ -1,11 +1,11 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { requireRole } from '@/lib/auth'
+import { requireScope } from '@/lib/permissions'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function saveDepartment(fd: FormData) {
-  const me = await requireRole('super_admin')
+  const me = await requireScope('admin.departments')
   const id = String(fd.get('id') ?? '')
   const admin = createAdminClient()
   const name = String(fd.get('name') ?? '').trim()

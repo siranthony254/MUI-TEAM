@@ -22,7 +22,8 @@ async function mk(key, role, extra = {}) {
   const { data, error } = await svc.auth.admin.createUser({ email, password, email_confirm: true })
   if (error) throw error
   users.push(data.user.id)
-  await svc.from('team_members').upsert({ id: data.user.id, full_name: `ZZUI ${key}`, email, role, profile_completed_at: new Date().toISOString(), ...extra })
+  const { error: mErr } = await svc.from('team_members').upsert({ id: data.user.id, full_name: `ZZUI ${key}`, email, role, profile_completed_at: new Date().toISOString(), ...extra })
+  if (mErr) throw mErr   // e.g. a real Executive Director already exists, so a second one is refused
   const c = createClient(origin, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, opts)
   const { data: s, error: e2 } = await c.auth.signInWithPassword({ email, password })
   if (e2) throw e2
@@ -54,9 +55,18 @@ try {
   // Only one Executive Director can exist; skip that column if the real one is already set up.
   const G = await mk('director', 'executive', { title: 'Executive Director', is_director: true }).catch(() => null)
   const Gu = await mk('guest', 'guest', { title: 'Guest' }).catch(() => null)
-  const cols = [S, X, M, ...(G ? [G] : []), ...(Gu ? [Gu] : [])]
+  // A member with only two slices of administration delegated (needs migration 11).
+  const Sec = await mk('secretary', 'member', { title: 'Secretary' }).catch(() => null)
+  if (Sec) {
+    const r = await svc.from('member_grants').insert([
+      { member_id: Sec.id, capability: 'admin.people', allowed: true },
+      { member_id: Sec.id, capability: 'admin.onboarding', allowed: true },
+    ])
+    if (r.error) console.log('note: member_grants not available yet:', r.error.message)
+  }
+  const cols = [S, X, M, ...(G ? [G] : []), ...(Gu ? [Gu] : []), ...(Sec ? [Sec] : [])]
   console.log(`base ${BASE}\n`)
-  console.log('page'.padEnd(28), 'sysadmin'.padEnd(14), 'executive'.padEnd(14), 'member'.padEnd(14), 'director'.padEnd(14), 'guest')
+  console.log('page'.padEnd(28), 'sysadmin'.padEnd(14), 'executive'.padEnd(14), 'member'.padEnd(14), 'director'.padEnd(14), 'guest'.padEnd(14), 'secretary')
   let problems = 0
   for (const p of PAGES) {
     const row = []

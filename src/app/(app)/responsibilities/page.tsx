@@ -46,6 +46,7 @@ export default async function Responsibilities() {
         <Card><SectionTitle>Authority — what you can decide without asking</SectionTitle><p className="text-sm">{me.authority ?? <span className="text-neutral-500">Not set yet.</span>}</p></Card>
         <Card><SectionTitle>Responsibilities</SectionTitle><List items={me.responsibilities} /></Card>
         <Card><SectionTitle>Deliverables</SectionTitle><List items={me.deliverables} /></Card>
+        {(me.success_measures ?? []).length > 0 && <Card className="md:col-span-2"><SectionTitle>How success is measured</SectionTitle><List items={me.success_measures} /></Card>}
       </div>
 
       <Card className="mt-4">

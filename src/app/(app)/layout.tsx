@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { Search } from 'lucide-react'
 import { QuickAdd, type QuickItem } from '@/components/QuickAdd'
-import { getCaps } from '@/lib/permissions'
+import { getCaps, getScopes } from '@/lib/permissions'
 import { redirect } from 'next/navigation'
 import { requireMember } from '@/lib/auth'
 import { Avatar } from '@/components/Avatar'
@@ -32,6 +32,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const chatUnread = (chatCounts ?? []).reduce((n: number, c: { unread: number }) => n + Number(c.unread), 0)
 
   const caps = await getCaps(me)
+  const scopes = await getScopes(me)
   const quickItems: QuickItem[] = me.role === 'guest' ? [] : [
     { href: '/tasks/new', label: 'Task', hint: caps.assign_tasks ? 'Assign work to someone' : 'Add a task for yourself' },
     { href: '/chat', label: 'Message', hint: 'Chat with the team' },
@@ -47,7 +48,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex min-h-screen bg-neutral-50 text-neutral-900">
-      <Nav role={me.role} isDirector={me.is_director} showAnalytics={caps.view_analytics} unread={count ?? 0} chatUnread={chatUnread} orgName={orgRow?.value || 'MUI Team'} />
+      <Nav role={me.role} isDirector={me.is_director} showAnalytics={caps.view_analytics} showAdmin={scopes.size > 0} unread={count ?? 0} chatUnread={chatUnread} orgName={orgRow?.value || 'MUI Team'} />
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center justify-between gap-3 border-b border-neutral-200 bg-white px-4 py-3">
           <div className="flex min-w-0 items-center gap-3">

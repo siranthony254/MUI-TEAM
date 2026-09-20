@@ -1,13 +1,13 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { requireRole } from '@/lib/auth'
+import { requireScope } from '@/lib/permissions'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export interface OnboardingState { error?: string; ok?: string }
 
 export async function saveWelcome(_prev: OnboardingState | undefined, fd: FormData): Promise<OnboardingState> {
-  await requireRole('super_admin')
+  await requireScope('admin.onboarding')
   const value = String(fd.get('welcome') ?? '').trim()
   if (value.length > 1500) return { error: 'Keep the welcome message under 1500 characters.' }
   const { error } = await createAdminClient().from('org_settings').upsert({ key: 'welcome_message', value })
@@ -17,7 +17,7 @@ export async function saveWelcome(_prev: OnboardingState | undefined, fd: FormDa
 }
 
 export async function addOnboardingItem(_prev: OnboardingState | undefined, fd: FormData): Promise<OnboardingState> {
-  await requireRole('super_admin')
+  await requireScope('admin.onboarding')
   const title = String(fd.get('title') ?? '').trim()
   if (title.length < 3) return { error: 'Give the step a title.' }
   const link = String(fd.get('link') ?? '').trim() || null
@@ -44,7 +44,7 @@ export async function addOnboardingItem(_prev: OnboardingState | undefined, fd: 
 }
 
 export async function removeOnboardingItem(fd: FormData) {
-  await requireRole('super_admin')
+  await requireScope('admin.onboarding')
   await createAdminClient().from('onboarding_items').delete().eq('id', String(fd.get('id') ?? ''))
   revalidatePath('/admin/onboarding')
   revalidatePath('/')

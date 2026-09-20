@@ -26,3 +26,35 @@ export const DEFAULT_MATRIX: Matrix = {
   member: Object.fromEntries(CAPABILITIES.map((c) => [c.id, false])) as Record<Capability, boolean>,
 }
 
+
+/** Slices of system administration that can be delegated to a person without making them a full system admin. */
+export const ADMIN_SCOPES = [
+  { id: 'admin.people', label: 'Manage people', hint: 'Add members, edit profiles and responsibilities, reset access, deactivate' },
+  { id: 'admin.onboarding', label: 'Manage onboarding', hint: 'The welcome message and the new-member checklist' },
+  { id: 'admin.departments', label: 'Manage departments', hint: 'Create departments and choose their directors' },
+  { id: 'admin.settings', label: 'Organisation settings', hint: 'Reminders, escalation, meeting prompts, required notifications' },
+  { id: 'admin.permissions', label: 'Permissions', hint: 'The permission matrix and per-person access (cannot make anyone a system admin)' },
+] as const
+
+export type Scope = (typeof ADMIN_SCOPES)[number]['id']
+
+/** Ready-made starting points for the access panel; everything can still be adjusted. */
+export const ACCESS_PRESETS: { id: string; label: string; hint: string; caps: Partial<Record<Capability, 'allow' | 'deny'>>; scopes: Scope[] }[] = [
+  { id: 'standard', label: 'Standard', hint: 'Follows their level. Nothing extra.', caps: {}, scopes: [] },
+  {
+    id: 'secretary', label: 'Secretary / office admin',
+    hint: 'Runs people and onboarding, sends campaigns, sees analytics, keeps the calendar and meetings.',
+    caps: { send_campaign: 'allow', view_analytics: 'allow', schedule_meeting: 'allow', add_event: 'allow', add_resource: 'allow', record_decision: 'allow' },
+    scopes: ['admin.people', 'admin.onboarding'],
+  },
+  {
+    id: 'hr', label: 'People & onboarding lead',
+    hint: 'Onboards and manages members and departments.',
+    caps: {}, scopes: ['admin.people', 'admin.onboarding', 'admin.departments'],
+  },
+  {
+    id: 'comms', label: 'Communications lead',
+    hint: 'Sends campaigns and can add events and files.',
+    caps: { send_campaign: 'allow', add_event: 'allow', add_resource: 'allow' }, scopes: [],
+  },
+]

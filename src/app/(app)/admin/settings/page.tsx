@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { requireRole } from '@/lib/auth'
+import { requireScope } from '@/lib/permissions'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { GROUPS } from '@/lib/notify/groups'
 import { mergeSettings } from '@/lib/org-settings'
@@ -10,7 +10,7 @@ import { SettingsForm } from './SettingsForm'
 export const dynamic = 'force-dynamic'
 
 export default async function SettingsPage() {
-  await requireRole('super_admin')
+  await requireScope('admin.settings')
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return <ServiceKeyNotice />
   const { data, error } = await createAdminClient().from('org_settings').select('key, value')
   if (error) return <ServiceKeyNotice detail={error.message} />

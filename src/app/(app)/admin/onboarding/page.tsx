@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { requireRole } from '@/lib/auth'
+import { requireScope } from '@/lib/permissions'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { OnboardingItem } from '@/lib/types'
 import { Card, PageTitle, SectionTitle } from '@/components/ui'
@@ -10,7 +10,7 @@ import { removeOnboardingItem } from './actions'
 export const dynamic = 'force-dynamic'
 
 export default async function OnboardingAdmin() {
-  await requireRole('super_admin')
+  await requireScope('admin.onboarding')
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return <ServiceKeyNotice />
   const admin = createAdminClient()
   const [items, { data: welcome }, { data: progress }] = await Promise.all([

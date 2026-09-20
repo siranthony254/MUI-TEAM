@@ -464,6 +464,18 @@ async function main() {
     ok(!direct.error && direct.data.length === 0, 'member updated their own role directly')
   })
 
+  // ---- migration 11: per-person access grants ----
+  await t('access grants: visible to the person and org viewers only, never writable from the client', async () => {
+    const S3 = await mkUser('granted', 'member')
+    noErr(await svc.from('member_grants').insert({ member_id: S3.id, capability: 'admin.people', allowed: true, granted_by: E.id }))
+    ok((noErr(await S3.client.from('member_grants').select('capability'))).length === 1, 'person cannot read their own grants')
+    ok((noErr(await D.client.from('member_grants').select('capability').eq('member_id', S3.id))).length === 0, 'a peer reads someone else\'s grants')
+    isErr(await S3.client.from('member_grants').insert({ member_id: S3.id, capability: 'admin.permissions', allowed: true }), 'a member granted themselves access')
+    const upd = await S3.client.from('member_grants').update({ allowed: false }).eq('member_id', S3.id).select('capability')
+    ok(!upd.error && upd.data.length === 0, 'a member edited their own grant')
+    ok((noErr(await S3.client.from('team_members').select('success_measures, start_date').eq('id', S3.id).single())).success_measures.length === 0, 'success_measures should default to empty')
+  })
+
 }
 
 async function cleanup() {

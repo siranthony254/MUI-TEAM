@@ -23,6 +23,8 @@ export interface TeamMember {
   notify_sms: boolean
   is_director: boolean
   preferred_name: string | null
+  success_measures: string[]
+  start_date: string | null
   avatar_url: string | null
   profile_completed_at: string | null
   /** Departments this person directs (filled in by getMember). */

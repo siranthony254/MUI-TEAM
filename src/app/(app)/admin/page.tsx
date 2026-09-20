@@ -1,5 +1,6 @@
 import Link from 'next/link'
-import { requireRole } from '@/lib/auth'
+import { canDelegate } from '@/lib/grants'
+import { getCaps, requireAnyAdmin } from '@/lib/permissions'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { channelEnabled } from '@/lib/notify/channels'
 import { fmtDateTime } from '@/lib/time'
@@ -31,8 +32,13 @@ function Health({ ok, label, detail }: { ok: boolean | null; label: string; deta
 }
 
 export default async function AdminHome() {
-  const me = await requireRole('super_admin')
+  const { me, scopes } = await requireAnyAdmin()
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return <ServiceKeyNotice />
+  const has = (s: string) => scopes.has(s as never)
+  const delegator = await canDelegate(me)
+  const caps = await getCaps(me)
+  const canCampaign = caps.send_campaign
+  const canAnalytics = caps.view_analytics
   const admin = createAdminClient()
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
 
@@ -73,12 +79,12 @@ export default async function AdminHome() {
       </div>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2 md:grid-cols-3">
-        <Link href="/admin/permissions"><Card className="h-full transition hover:border-amber-400"><p className="font-semibold">Permissions</p><p className="mt-0.5 text-xs text-neutral-500">Who may do what, by level.</p></Card></Link>
-        <Link href="/admin/departments"><Card className="h-full transition hover:border-amber-400"><p className="font-semibold">Departments</p><p className="mt-0.5 text-xs text-neutral-500">Create departments and choose directors.</p></Card></Link>
-        <Link href="/admin/settings"><Card className="h-full transition hover:border-amber-400"><p className="font-semibold">Organisation settings</p><p className="mt-0.5 text-xs text-neutral-500">Reminders, escalation, meeting prompts, required notifications.</p></Card></Link>
-        <Link href="/admin/onboarding"><Card className="h-full transition hover:border-amber-400"><p className="font-semibold">Onboarding</p><p className="mt-0.5 text-xs text-neutral-500">Welcome message and the checklist new members get.</p></Card></Link>
-        <Link href="/admin/campaigns"><Card className="h-full transition hover:border-amber-400"><p className="font-semibold">Campaigns</p><p className="mt-0.5 text-xs text-neutral-500">Send a message to part of the team.</p></Card></Link>
-        <Link href="/analytics"><Card className="h-full transition hover:border-amber-400"><p className="font-semibold">Analytics</p><p className="mt-0.5 text-xs text-neutral-500">Organisation-wide command centre.</p></Card></Link>
+        {has('admin.permissions') && <Link href="/admin/permissions"><Card className="h-full transition hover:border-amber-400"><p className="font-semibold">Permissions</p><p className="mt-0.5 text-xs text-neutral-500">Who may do what, by level.</p></Card></Link>}
+        {has('admin.departments') && <Link href="/admin/departments"><Card className="h-full transition hover:border-amber-400"><p className="font-semibold">Departments</p><p className="mt-0.5 text-xs text-neutral-500">Create departments and choose directors.</p></Card></Link>}
+        {has('admin.settings') && <Link href="/admin/settings"><Card className="h-full transition hover:border-amber-400"><p className="font-semibold">Organisation settings</p><p className="mt-0.5 text-xs text-neutral-500">Reminders, escalation, meeting prompts, required notifications.</p></Card></Link>}
+        {has('admin.onboarding') && <Link href="/admin/onboarding"><Card className="h-full transition hover:border-amber-400"><p className="font-semibold">Onboarding</p><p className="mt-0.5 text-xs text-neutral-500">Welcome message and the checklist new members get.</p></Card></Link>}
+        {canCampaign && <Link href="/admin/campaigns"><Card className="h-full transition hover:border-amber-400"><p className="font-semibold">Campaigns</p><p className="mt-0.5 text-xs text-neutral-500">Send a message to part of the team.</p></Card></Link>}
+        {canAnalytics && <Link href="/analytics"><Card className="h-full transition hover:border-amber-400"><p className="font-semibold">Analytics</p><p className="mt-0.5 text-xs text-neutral-500">Command centre for your area.</p></Card></Link>}
       </div>
 
       <Card className="mt-4">
@@ -86,6 +92,7 @@ export default async function AdminHome() {
         <p className="text-sm">{director ? <><strong>{director.full_name}</strong>{director.title ? ` — ${director.title}` : ''}. Only they can publish official announcements and delegate system-admin access.</> : <span className="text-neutral-600">Not set yet. Add the Executive Director as a member below (or open their profile and tick &ldquo;Executive Director&rdquo;) so the initiative&apos;s leader has their own desk. Until then, a system admin can set this up.</span>}</p>
       </Card>
 
+      {(me.role === 'super_admin' || has('admin.settings')) && (
       <Card className="mt-4">
         <SectionTitle>System health</SectionTitle>
         <ul className="divide-y divide-neutral-50">
@@ -103,7 +110,10 @@ export default async function AdminHome() {
           {noPhones > 0 && <Health ok={false} label="SMS opt-ins without a phone number" detail={`${noPhones} member(s) will not receive texts`} />}
         </ul>
       </Card>
+      )}
 
+      {has('admin.people') && (
+        <>
       <Card className="mt-4">
         <SectionTitle>Team ({people.length})</SectionTitle>
         <ul className="divide-y divide-neutral-100">
@@ -128,9 +138,15 @@ export default async function AdminHome() {
           departments={(departments.data ?? []).map((d) => ({ id: d.id, label: d.name }))}
           people={active.map((m) => ({ id: m.id, label: m.full_name }))}
           topRolesLocked={topRolesLocked}
+          canDelegate={delegator}
+          canGrantPermissions={me.role === 'super_admin' || me.is_director}
         />
       </Card>
 
+        </>
+      )}
+
+      {has('admin.departments') && (
       <Card className="mt-4">
         <SectionTitle>Departments</SectionTitle>
         <p className="mb-3 text-sm text-neutral-600">{(departments.data ?? []).map((d) => d.name).join(' · ') || 'None yet.'}</p>
@@ -139,6 +155,7 @@ export default async function AdminHome() {
           <button className={`${buttonClass} mt-1`}>Add</button>
         </form>
       </Card>
+      )}
     </>
   )
 }

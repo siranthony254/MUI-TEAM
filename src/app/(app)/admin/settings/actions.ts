@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { requireRole } from '@/lib/auth'
+import { requireScope } from '@/lib/permissions'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { GROUPS } from '@/lib/notify/groups'
 
@@ -19,7 +19,7 @@ const int = (fd: FormData, k: string, min: number, max: number, fallback: number
 }
 
 export async function saveSettings(_prev: SettingsState | undefined, fd: FormData): Promise<SettingsState> {
-  await requireRole('super_admin')
+  await requireScope('admin.settings')
   const orgName = String(fd.get('org_name') ?? '').trim()
   if (orgName.length < 2 || orgName.length > 60) return { error: 'The organisation name should be 2–60 characters.' }
 

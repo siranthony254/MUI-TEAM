@@ -1,11 +1,12 @@
 import Link from 'next/link'
 import { requireMember } from '@/lib/auth'
+import { getCaps, getScopes } from '@/lib/permissions'
 import { MOBILE_PRIMARY, visibleItems } from '@/components/nav-items'
 import { Card, PageTitle } from '@/components/ui'
 
 export default async function More() {
   const me = await requireMember()
-  const items = visibleItems(me.role, me.is_director).filter((i) => !MOBILE_PRIMARY.includes(i.href))
+  const items = visibleItems(me.role, me.is_director, (await getCaps(me)).view_analytics, (await getScopes(me)).size > 0).filter((i) => !MOBILE_PRIMARY.includes(i.href))
   return (
     <>
       <PageTitle>More</PageTitle>

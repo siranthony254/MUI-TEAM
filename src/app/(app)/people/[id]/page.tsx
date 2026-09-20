@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { requireMember } from '@/lib/auth'
+import { hasScope } from '@/lib/permissions'
 import { createClient } from '@/lib/supabase/server'
 import { isOverdue } from '@/lib/tasks'
 import { fmtDateTime } from '@/lib/time'
@@ -81,6 +82,13 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
           <div className="mt-4" />
           <SectionTitle>Deliverables</SectionTitle>
           <List items={person.deliverables} />
+          {(person.success_measures ?? []).length > 0 && (
+            <>
+              <div className="mt-4" />
+              <SectionTitle>How success is measured</SectionTitle>
+              <List items={person.success_measures} />
+            </>
+          )}
         </Card>
       </div>
 
@@ -120,7 +128,7 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
         {person.phone && <p className="text-sm"><a className="text-amber-700 hover:underline" href={`tel:${person.phone}`}>{person.phone}</a></p>}
       </Card>
 
-      {me.role === 'super_admin' && (
+      {(me.role === 'super_admin' || (await hasScope(me, 'admin.people'))) && (
         <Link href={`/admin/people/${person.id}`} className="mt-4 inline-block text-sm font-medium text-amber-700 hover:underline">
           Edit role, mandate and responsibilities →
         </Link>

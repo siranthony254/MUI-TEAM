@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { requireRole } from '@/lib/auth'
+import { requireScope } from '@/lib/permissions'
 import { getMatrix } from '@/lib/permissions'
 import { PageTitle } from '@/components/ui'
 import { PermissionMatrix } from './PermissionMatrix'
@@ -7,7 +7,7 @@ import { PermissionMatrix } from './PermissionMatrix'
 export const dynamic = 'force-dynamic'
 
 export default async function PermissionsPage() {
-  await requireRole('super_admin')
+  await requireScope('admin.permissions')
   const matrix = await getMatrix()
   return (
     <>

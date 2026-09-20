@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { requireRole } from '@/lib/auth'
+import { requireScope } from '@/lib/permissions'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Card, PageTitle, SectionTitle, buttonClass, inputClass } from '@/components/ui'
 import { ServiceKeyNotice } from '@/components/ServiceKeyNotice'
@@ -8,7 +8,7 @@ import { saveDepartment } from './actions'
 export const dynamic = 'force-dynamic'
 
 export default async function DepartmentsAdmin() {
-  await requireRole('super_admin')
+  await requireScope('admin.departments')
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return <ServiceKeyNotice />
   const admin = createAdminClient()
   const [depts, people] = await Promise.all([

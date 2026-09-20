@@ -56,6 +56,12 @@ export function EditMemberForm({
       <label className="block text-sm font-medium">Deliverables (one per line)
         <textarea name="deliverables" rows={4} defaultValue={member.deliverables.join('\n')} className={inputClass} />
       </label>
+      <label className="block text-sm font-medium">How success is measured (one per line)
+        <textarea name="success_measures" rows={3} defaultValue={(member.success_measures ?? []).join('\n')} className={inputClass} />
+      </label>
+      <label className="block text-sm font-medium">Start date
+        <input name="start_date" type="date" defaultValue={member.start_date ?? ''} className={`${inputClass} max-w-[200px]`} />
+      </label>
       {state?.error && <p role="alert" className="text-sm text-red-600">{state.error}</p>}
       {state?.ok && <p role="status" className="text-sm text-green-700">{state.ok}</p>}
       <button disabled={pending} className={buttonClass}>{pending ? 'Saving…' : 'Save'}</button>

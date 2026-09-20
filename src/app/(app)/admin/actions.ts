@@ -2,7 +2,9 @@
 
 import { randomBytes } from 'node:crypto'
 import { revalidatePath } from 'next/cache'
-import { requireRole } from '@/lib/auth'
+import { requireScope, hasScope } from '@/lib/permissions'
+import { applyGrants } from '@/lib/grants'
+import { requireMember } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { TeamRole } from '@/lib/types'
 
@@ -14,6 +16,20 @@ const lines = (v: FormDataEntryValue | null) =>
   String(v ?? '').split('\n').map((s) => s.trim()).filter(Boolean)
 
 const tempPassword = () => randomBytes(9).toString('base64url')
+
+/** The role-profile fields captured when adding or editing someone. */
+function profileFields(fd: FormData) {
+  return {
+    mandate: String(fd.get('mandate') ?? '').trim() || null,
+    authority: String(fd.get('authority') ?? '').trim() || null,
+    responsibilities: lines(fd.get('responsibilities')),
+    deliverables: lines(fd.get('deliverables')),
+    success_measures: lines(fd.get('success_measures')),
+    start_date: String(fd.get('start_date') ?? '') || null,
+  }
+}
+
+const isTop = (m: { role: string; is_director: boolean }) => m.role === 'super_admin' || m.is_director
 
 type Admin = ReturnType<typeof createAdminClient>
 
@@ -56,7 +72,7 @@ async function log(
  * The admin shares it privately; the member changes it under Account.
  */
 export async function addMember(_prev: AdminState | undefined, formData: FormData): Promise<AdminState> {
-  const me = await requireRole('super_admin')
+  const me = await requireScope('admin.people')
 
   const email = String(formData.get('email') ?? '').trim().toLowerCase()
   const full_name = String(formData.get('full_name') ?? '').trim()
@@ -64,15 +80,19 @@ export async function addMember(_prev: AdminState | undefined, formData: FormDat
   const title = String(formData.get('title') ?? '').trim() || null
   const department_id = String(formData.get('department_id') ?? '') || null
   const reports_to = String(formData.get('reports_to') ?? '') || null
+  const phone = String(formData.get('phone') ?? '').trim() || null
   if (!email || !full_name) return { error: 'Name and email are required.' }
   if (!ROLES.includes(role)) return { error: 'Invalid role.' }
   const wantsDirector = formData.get('is_director') === 'on'
 
   const admin = createAdminClient()
-  if ((role === 'super_admin' || wantsDirector) && !(await mayManageTopRoles(admin, me))) {
+  if ((role === 'super_admin' || wantsDirector) && !(isTop(me) && (await mayManageTopRoles(admin, me)))) {
     return { error: "Only the Executive Director can give system-admin access or name a new Director. Use the Director's desk." }
   }
   if (wantsDirector && role !== 'executive') return { error: 'The Executive Director should hold the Executive access level.' }
+  if (role === 'executive' && !isTop(me) && !(await hasScope(me, 'admin.permissions'))) {
+    return { error: 'Naming an executive needs the Permissions part of administration.' }
+  }
   const password = tempPassword()
 
   // The person may already have a website account (same Supabase project).
@@ -91,23 +111,26 @@ export async function addMember(_prev: AdminState | undefined, formData: FormDat
   }
 
   const { error: insertError } = await admin.from('team_members').upsert({
-    id: userId, full_name, email, role, title, department_id, reports_to, active: true,
+    id: userId, full_name, email, role, title, department_id, reports_to, phone, active: true,
+    ...profileFields(formData),
   })
   if (insertError) return { error: insertError.message }
 
   if (wantsDirector) await applyDirector(admin, userId!, true)
+  const grantError = await applyGrants(me, userId!, formData)
   await log(me.id, 'member.added', 'member', userId!, `${me.full_name} added ${full_name} to the team as ${role.replace('_', ' ')}`)
   revalidatePath('/admin')
   revalidatePath('/people')
+  const note = grantError ? ` (Their access settings were not saved: ${grantError})` : ''
   return {
-    ok: shown
+    ok: (shown
       ? `${full_name} added. Temporary password (shown once — share it privately): ${shown}`
-      : `${full_name} added. They already had an account, so their existing password still works.`,
+      : `${full_name} added. They already had an account, so their existing password still works.`) + note,
   }
 }
 
 export async function updateMember(_prev: AdminState | undefined, formData: FormData): Promise<AdminState> {
-  const me = await requireRole('super_admin')
+  const me = await requireScope('admin.people')
   const id = String(formData.get('id') ?? '')
   const role = String(formData.get('role') ?? '') as TeamRole
   if (!ROLES.includes(role)) return { error: 'Invalid role.' }
@@ -118,6 +141,10 @@ export async function updateMember(_prev: AdminState | undefined, formData: Form
   const admin = createAdminClient()
   const { data: before } = await admin.from('team_members').select('role, department_id, full_name, is_director').eq('id', id).maybeSingle()
   if (!before) return { error: 'Member not found.' }
+  if (!isTop(me) && (before.role === 'super_admin' || before.is_director)) return { error: 'Only a system admin can edit this person.' }
+  if (!isTop(me) && role !== before.role && (role === 'executive' || role === 'super_admin') && !(await hasScope(me, 'admin.permissions'))) {
+    return { error: 'Changing someone to Executive needs the Permissions part of administration.' }
+  }
 
   const wantsDirector = formData.get('is_director') === 'on'
   const touchesTopRole = (role === 'super_admin') !== (before.role === 'super_admin') || wantsDirector !== before.is_director
@@ -140,6 +167,8 @@ export async function updateMember(_prev: AdminState | undefined, formData: Form
     authority: String(formData.get('authority') ?? '').trim() || null,
     responsibilities: lines(formData.get('responsibilities')),
     deliverables: lines(formData.get('deliverables')),
+    success_measures: lines(formData.get('success_measures')),
+    start_date: String(formData.get('start_date') ?? '') || null,
   }).eq('id', id)
   if (error) return { error: error.message }
   if (wantsDirector !== before.is_director) {
@@ -158,11 +187,13 @@ export async function updateMember(_prev: AdminState | undefined, formData: Form
 
 /** Issues a new one-time password and ends existing sign-in. The old password stops working immediately. */
 export async function resetAccess(_prev: AdminState | undefined, formData: FormData): Promise<AdminState> {
-  const me = await requireRole('super_admin')
+  const me = await requireScope('admin.people')
   const id = String(formData.get('id') ?? '')
   if (!id) return { error: 'Missing member.' }
 
   const admin = createAdminClient()
+  const { data: who } = await admin.from('team_members').select('role, is_director').eq('id', id).maybeSingle()
+  if (who && !isTop(me) && isTop(who)) return { error: 'Only a system admin can reset access for this person.' }
   const password = tempPassword()
   const { error } = await admin.auth.admin.updateUserById(id, { password })
   if (error) return { error: error.message }
@@ -178,7 +209,7 @@ export async function resetAccess(_prev: AdminState | undefined, formData: FormD
  * reports, activity) is preserved.
  */
 export async function deactivateMember(_prev: AdminState | undefined, formData: FormData): Promise<AdminState> {
-  const me = await requireRole('super_admin')
+  const me = await requireScope('admin.people')
   const id = String(formData.get('id') ?? '')
   const reassignTo = String(formData.get('reassign_to') ?? '')
   if (id === me.id) return { error: 'You can\'t deactivate yourself.' }
@@ -194,6 +225,7 @@ export async function deactivateMember(_prev: AdminState | undefined, formData: 
     admin.from('team_members').select('id, full_name, active').eq('id', reassignTo).maybeSingle(),
   ])
   if (!leaver) return { error: 'Member not found.' }
+  if (leaver.role === 'super_admin' && !isTop(me)) return { error: 'Only a system admin can deactivate a system admin.' }
   if (!heir?.active) return { error: 'The person taking over must be an active member.' }
 
   if (leaver.role === 'super_admin') {
@@ -233,9 +265,11 @@ export async function deactivateMember(_prev: AdminState | undefined, formData: 
 }
 
 export async function reactivateMember(_prev: AdminState | undefined, formData: FormData): Promise<AdminState> {
-  const me = await requireRole('super_admin')
+  const me = await requireScope('admin.people')
   const id = String(formData.get('id') ?? '')
   const admin = createAdminClient()
+  const { data: who } = await admin.from('team_members').select('role').eq('id', id).maybeSingle()
+  if (who?.role === 'super_admin' && !isTop(me)) return { error: 'Only a system admin can reactivate a system admin.' }
   const { error: banErr } = await admin.auth.admin.updateUserById(id, { ban_duration: 'none' })
   if (banErr) return { error: banErr.message }
   const { data, error } = await admin.from('team_members').update({ active: true }).eq('id', id).select('full_name')
@@ -246,11 +280,21 @@ export async function reactivateMember(_prev: AdminState | undefined, formData: 
 }
 
 export async function addDepartment(formData: FormData) {
-  const me = await requireRole('super_admin')
+  const me = await requireScope('admin.departments')
   const name = String(formData.get('name') ?? '').trim()
   if (name.length < 2) return
   const admin = createAdminClient()
   const { data } = await admin.from('departments').insert({ name }).select('id')
   if (data?.[0]) await log(me.id, 'department.created', 'department', data[0].id, `${me.full_name} created the ${name} department`)
   revalidatePath('/admin')
+}
+
+/** Saves the "Access & delegation" panel for one person. */
+export async function saveGrants(_prev: AdminState | undefined, formData: FormData): Promise<AdminState> {
+  const me = await requireMember()
+  const id = String(formData.get('member_id') ?? '')
+  const error = await applyGrants(me, id, formData)
+  if (error) return { error }
+  revalidatePath('/', 'layout')
+  return { ok: 'Access updated. It applies immediately.' }
 }

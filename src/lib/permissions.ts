@@ -7,7 +7,7 @@ import { isExecOrAbove } from '@/lib/auth'
 import type { TeamMember } from '@/lib/types'
 
 export * from '@/lib/capabilities'
-import { CAPABILITIES, DEFAULT_MATRIX, type Capability, type EditableLevel, type Level, type Matrix } from '@/lib/capabilities'
+import { ADMIN_SCOPES, CAPABILITIES, DEFAULT_MATRIX, type Capability, type EditableLevel, type Level, type Matrix, type Scope } from '@/lib/capabilities'
 
 export function levelOf(me: TeamMember): Level {
   if (me.role === 'super_admin') return 'super_admin'
@@ -34,10 +34,34 @@ export const getCaps = cache(async (me: TeamMember): Promise<Record<Capability, 
   if (level === 'super_admin') return all
   if (level === 'guest') return none
   const caps = { ...(await getMatrix())[level] }
-  // The Executive Director always runs campaigns, whatever the executive setting says.
+  // Per-person grants and denials sit on top of the level (expired ones are ignored).
+  for (const g of await getGrants(me.id)) {
+    if (g.capability in caps) caps[g.capability as Capability] = g.allowed
+  }
+  // The Executive Director always runs campaigns, whatever the settings say.
   if (me.is_director) caps.send_campaign = true
   return caps
 })
+
+/** This person's live (unexpired) grants. Reads their own rows, which the database allows. */
+export const getGrants = cache(async (memberId: string) => {
+  const supabase = await createClient()
+  const { data } = await supabase.from('member_grants').select('capability, allowed, expires_at').eq('member_id', memberId)
+  const now = Date.now()
+  return (data ?? []).filter((g) => !g.expires_at || new Date(g.expires_at).getTime() > now)
+})
+
+/** Which slices of system administration this person holds. System admins hold them all. */
+export const getScopes = cache(async (me: TeamMember): Promise<Set<Scope>> => {
+  if (me.role === 'super_admin' || me.is_director) return new Set(ADMIN_SCOPES.map((s) => s.id))
+  if (me.role === 'guest') return new Set()
+  const held = (await getGrants(me.id)).filter((g) => g.allowed && g.capability.startsWith('admin.')).map((g) => g.capability as Scope)
+  return new Set(held.filter((c) => ADMIN_SCOPES.some((s) => s.id === c)))
+})
+
+export async function hasScope(me: TeamMember, scope: Scope): Promise<boolean> {
+  return (await getScopes(me)).has(scope)
+}
 
 export async function can(me: TeamMember, capability: Capability): Promise<boolean> {
   return (await getCaps(me))[capability]
@@ -60,4 +84,19 @@ export async function requireCap(capability: Capability): Promise<TeamMember> {
   const me = await requireMember()
   if (!(await can(me, capability))) redirect('/')
   return me
+}
+
+/** Page/action guard for a slice of system administration. */
+export async function requireScope(scope: Scope): Promise<TeamMember> {
+  const me = await requireMember()
+  if (!(await hasScope(me, scope))) redirect('/')
+  return me
+}
+
+/** For the System admin landing page: anyone holding at least one slice. */
+export async function requireAnyAdmin(): Promise<{ me: TeamMember; scopes: Set<Scope> }> {
+  const me = await requireMember()
+  const scopes = await getScopes(me)
+  if (scopes.size === 0) redirect('/')
+  return { me, scopes }
 }
