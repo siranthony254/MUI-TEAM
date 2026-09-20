@@ -1,23 +1,35 @@
-import type { SupabaseClient, User } from '@supabase/supabase-js'
+import type { SupabaseClient } from '@supabase/supabase-js'
+
+export interface AuthUser { id: string; email?: string }
 
 export interface Verified {
-  user: User | null
+  user: AuthUser | null
   /** True when we could not reach the auth server (network / 5xx / rate limit), as opposed to "not signed in". */
   unavailable: boolean
 }
 
 /**
- * Asks Supabase who the caller is, retrying briefly on transient failures. A network hiccup must not
- * be mistaken for "signed out", or people get bounced to the login screen at random.
+ * Who is calling? Uses `getClaims()`, which checks the session token's signature locally against cached public
+ * keys, so a normal page view needs no round trip to the auth server (it only calls out to refresh an expired
+ * token). If that isn't possible it falls back to asking the server, retrying briefly on transient failures,
+ * so a network hiccup is never mistaken for "signed out".
  */
 export async function verifyUser(supabase: SupabaseClient, attempts = 3): Promise<Verified> {
   for (let i = 0; i < attempts; i++) {
     try {
+      const { data, error } = await supabase.auth.getClaims()
+      const claims = data?.claims as { sub?: string; email?: string } | undefined
+      if (claims?.sub) return { user: { id: claims.sub, email: claims.email }, unavailable: false }
+      if (!error) return { user: null, unavailable: false }          // no session: genuinely signed out
+    } catch {
+      // fall through to the server check below
+    }
+    try {
       const { data: { user }, error } = await supabase.auth.getUser()
-      if (user) return { user, unavailable: false }
+      if (user) return { user: { id: user.id, email: user.email }, unavailable: false }
       const status = (error as { status?: number } | null)?.status
       const transient = !!error && (error.name === 'AuthRetryableFetchError' || (typeof status === 'number' && (status >= 500 || status === 429)))
-      if (!transient) return { user: null, unavailable: false }   // genuinely no valid session
+      if (!transient) return { user: null, unavailable: false }
     } catch {
       // thrown network error: treat as transient
     }

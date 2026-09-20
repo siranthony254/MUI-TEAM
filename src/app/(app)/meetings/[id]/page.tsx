@@ -7,6 +7,9 @@ import { fmtDateTime } from '@/lib/time'
 import type { Decision, Meeting, Task } from '@/lib/types'
 import { Card, PageTitle, SectionTitle, StatusBadge } from '@/components/ui'
 import { ActionItemForm, DecisionForm, OutcomeForm } from './MeetingPanels'
+import { deleteMeeting } from '../../manage-actions'
+import { MeetingEditForm } from '../../ManageForms'
+import { ConfirmButton, ManagePanel } from '@/components/ConfirmButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -101,6 +104,13 @@ export default async function MeetingPage({ params }: { params: Promise<{ id: st
 
       {canManage && (
         <>
+          <ManagePanel label="Edit meeting details">
+            <MeetingEditForm meeting={meeting} />
+            <form action={deleteMeeting} className="mt-4 border-t border-neutral-200 pt-3">
+              <input type="hidden" name="id" value={meeting.id} />
+              <ConfirmButton message="Delete this meeting with its minutes and attendance? Action items already created stay as tasks." className="text-sm font-medium text-red-600 hover:underline">Delete this meeting</ConfirmButton>
+            </form>
+          </ManagePanel>
           <Card className="mt-4">
             <SectionTitle>Minutes &amp; attendance</SectionTitle>
             <OutcomeForm id={meeting.id} status={meeting.status} minutes={meeting.minutes ?? ''} attendees={attendees} />

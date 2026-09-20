@@ -9,6 +9,10 @@ import { Avatar } from '@/components/Avatar'
 import { Paperclip } from 'lucide-react'
 import type { Attachment, Channel, Message } from '@/lib/types'
 import { deleteMessage } from '../actions'
+import { deleteChannel, setChannelMuted } from '../../manage-actions'
+import { ConfirmButton } from '@/components/ConfirmButton'
+import { MessageEdit } from '../../ManageForms'
+import { BellOff, Bell } from 'lucide-react'
 import { ChatLive } from './ChatLive'
 import { Composer } from './Composer'
 
@@ -22,11 +26,13 @@ export default async function ChannelPage({ params }: { params: Promise<{ id: st
   const { data: channel } = await supabase.from('channels').select('*').eq('id', id).maybeSingle()
   if (!channel) notFound()
 
-  const [{ data: rows }, { data: members }, { data: departments }] = await Promise.all([
+  const [{ data: rows }, { data: members }, { data: departments }, { data: myRead }] = await Promise.all([
     supabase.from('messages').select('*').eq('channel_id', id).order('created_at', { ascending: false }).limit(150),
     supabase.from('team_members').select('id, full_name').eq('active', true),
     supabase.from('departments').select('name'),
+    supabase.from('channel_reads').select('muted').eq('channel_id', id).eq('member_id', me.id).maybeSingle(),
   ])
+  const muted = !!myRead?.muted
   const messages = ((rows ?? []) as (Message & { refs?: RefItem[] })[]).reverse()
   const messageIds = messages.map((m) => m.id)
   const { data: attRows } = messageIds.length
@@ -73,6 +79,21 @@ export default async function ChannelPage({ params }: { params: Promise<{ id: st
             </>
           )}
         </div>
+        <div className="ml-auto flex items-center gap-3">
+          <form action={setChannelMuted}>
+            <input type="hidden" name="channel_id" value={id} />
+            <input type="hidden" name="muted" value={muted ? '0' : '1'} />
+            <button className="inline-flex items-center gap-1 text-xs text-neutral-500 hover:text-amber-700" title={muted ? 'Get push notifications for this chat again' : 'Stop push notifications from this chat'}>
+              {muted ? <><BellOff size={14} aria-hidden /> Muted</> : <><Bell size={14} aria-hidden /> Mute</>}
+            </button>
+          </form>
+          {ch.kind === 'group' && (ch.created_by === me.id || me.role === 'super_admin') && (
+            <form action={deleteChannel}>
+              <input type="hidden" name="id" value={id} />
+              <ConfirmButton message={`Delete #${ch.name} and every message in it? This cannot be undone.`}>Delete group</ConfirmButton>
+            </form>
+          )}
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-4">
@@ -87,6 +108,7 @@ export default async function ChannelPage({ params }: { params: Promise<{ id: st
                   <p className="text-xs">
                     <span className="font-semibold text-neutral-800">{nameOf(m.author_id)}</span>
                     <span className="ml-2 text-neutral-400">{fmtChatTime(m.created_at)}</span>
+                    {m.edited_at && !m.deleted_at && <span className="ml-1 text-neutral-400">(edited)</span>}
                   </p>
                   {m.deleted_at ? (
                     <p className="text-sm italic text-neutral-400">Message deleted</p>
@@ -113,11 +135,14 @@ export default async function ChannelPage({ params }: { params: Promise<{ id: st
                     </ul>
                   )}
                   {(mine || me.role === 'super_admin') && !m.deleted_at && (
-                    <form action={deleteMessage} className="mt-0.5">
-                      <input type="hidden" name="id" value={m.id} />
-                      <input type="hidden" name="channel_id" value={id} />
-                      <button className="text-xs text-neutral-400 hover:text-red-600">Delete</button>
-                    </form>
+                    <div className="mt-0.5 flex items-start gap-3">
+                      {mine && <MessageEdit id={m.id} body={m.body} />}
+                      <form action={deleteMessage}>
+                        <input type="hidden" name="id" value={m.id} />
+                        <input type="hidden" name="channel_id" value={id} />
+                        <ConfirmButton message={mine ? 'Delete this message?' : `Delete ${nameOf(m.author_id)}'s message for everyone?`}>Delete</ConfirmButton>
+                      </form>
+                    </div>
                   )}
                 </li>
               )

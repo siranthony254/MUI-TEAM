@@ -7,6 +7,8 @@ import { fmtDue, isOverdue } from '@/lib/tasks'
 import { EPISODE_STAGES, EPISODE_STAGE_LABEL, type Episode, type Task } from '@/lib/types'
 import { Card, PageTitle, SectionTitle, StatusBadge } from '@/components/ui'
 import { EditEpisodeForm } from '../EpisodeForms'
+import { deleteEpisode } from '../../manage-actions'
+import { ConfirmButton } from '@/components/ConfirmButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -110,6 +112,12 @@ export default async function EpisodePage({ params }: { params: Promise<{ id: st
         <details className="mt-6 rounded-xl border border-neutral-200 bg-white p-4">
           <summary className="cursor-pointer text-sm font-semibold">Edit episode details</summary>
           <div className="mt-4"><EditEpisodeForm episode={ep} /></div>
+          {(ep.created_by === me.id || me.role === 'super_admin' || me.is_director) && (
+            <form action={deleteEpisode} className="mt-4 border-t border-neutral-200 pt-3">
+              <input type="hidden" name="id" value={ep.id} />
+              <ConfirmButton message="Delete this episode? Its tasks stay, but lose the episode link." className="text-sm font-medium text-red-600 hover:underline">Delete episode</ConfirmButton>
+            </form>
+          )}
         </details>
       )}
     </>

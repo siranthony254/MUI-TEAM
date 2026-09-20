@@ -78,6 +78,7 @@ export interface Project {
   status: 'active' | 'at_risk' | 'paused' | 'done'
   start_date: string | null
   due_date: string | null
+  created_by?: string | null
 }
 
 export interface AppNotification {
@@ -170,6 +171,7 @@ export interface Message {
   mentions: string[]
   created_at: string
   deleted_at: string | null
+  edited_at?: string | null
 }
 
 export interface CalendarEvent {

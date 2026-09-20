@@ -10,6 +10,7 @@ import type { TeamMember } from '@/lib/types'
 import { Card, PageTitle, SectionTitle } from '@/components/ui'
 import { AccessPanel } from './AccessPanel'
 import { EditMemberForm } from './EditMemberForm'
+import { DeleteMemberForm } from './DeleteMemberForm'
 
 export const dynamic = 'force-dynamic'
 
@@ -82,6 +83,16 @@ export default async function EditMember({ params }: { params: Promise<{ id: str
             memberId={member.id}
             active={member.active}
             defaultHeir={member.reports_to ?? me.id}
+            heirs={(others ?? []).map((p) => ({ id: p.id, label: p.full_name }))}
+          />
+        </Card>
+      )}
+
+      {me.role === 'super_admin' && id !== me.id && !member.is_director && (
+        <Card className="mt-4 border-red-200">
+          <SectionTitle>Delete user</SectionTitle>
+          <DeleteMemberForm
+            member={{ id: member.id, full_name: member.full_name }}
             heirs={(others ?? []).map((p) => ({ id: p.id, label: p.full_name }))}
           />
         </Card>

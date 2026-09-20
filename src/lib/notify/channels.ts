@@ -18,6 +18,8 @@ export interface Message {
   body: string | null
   /** In-app path, e.g. /tasks/123 */
   link: string | null
+  /** Notification kind: pushes about the same thing (e.g. one chat) replace each other instead of piling up. */
+  kind?: string
 }
 
 const appUrl = () => (process.env.NEXT_PUBLIC_APP_URL ?? '').replace(/\/$/, '')
@@ -106,7 +108,7 @@ export async function sendPush(sub: PushSub, m: Message): Promise<boolean> {
   try {
     await webpush.sendNotification(
       { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-      JSON.stringify({ title: m.title, body: m.body ?? '', url: m.link ?? '/notifications' }),
+      JSON.stringify({ title: m.title, body: m.body ?? '', url: m.link ?? '/notifications', kind: m.kind ?? '' }),
       { TTL: 60 * 60 * 24 },
     )
     return true

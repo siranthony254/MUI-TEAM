@@ -61,3 +61,10 @@ export function shiftMonth(year: number, month: number, by: number) {
   const d = new Date(Date.UTC(year, month - 1 + by, 1))
   return { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1 }
 }
+
+/** The reverse of localInputToIso: an ISO instant as "YYYY-MM-DDTHH:mm" Nairobi time, for a datetime-local input. */
+export function isoToLocalInput(iso: string | null | undefined): string {
+  if (!iso) return ''
+  const d = new Date(new Date(iso).getTime() + 3 * 3600_000)
+  return Number.isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 16)
+}

@@ -5,8 +5,9 @@ import { getCaps, getScopes } from '@/lib/permissions'
 import { redirect } from 'next/navigation'
 import { requireMember } from '@/lib/auth'
 import { Avatar } from '@/components/Avatar'
-import { createClient } from '@/lib/supabase/server'
-import { mutedKinds } from '@/lib/notify/muted'
+import { getShell } from '@/lib/shell'
+import { computeMutedKinds } from '@/lib/notify/muted'
+import { LiveSync } from '@/components/LiveSync'
 import { signOut } from '@/app/login/actions'
 import { ROLE_LABEL } from '@/lib/types'
 import { Nav } from '@/components/Nav'
@@ -17,19 +18,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // New members finish their profile first.
   // (Only an explicit null means "not set up": before migration 9 the column doesn't exist and everyone is treated as done.)
   if (me.profile_completed_at === null) redirect('/welcome')
-  const supabase = await createClient()
-  const { data: orgRow } = await supabase.from('org_settings').select('value').eq('key', 'org_name').maybeSingle()
-  const muted = await mutedKinds(supabase, me.id)
-  let unreadQuery = supabase
-    .from('notifications')
-    .select('id', { count: 'exact', head: true })
-    .eq('recipient_id', me.id)
-    .is('read_at', null)
-  if (muted.length) unreadQuery = unreadQuery.not('kind', 'in', `(${muted.join(',')})`)
-  const { count } = await unreadQuery
-
-  const { data: chatCounts } = await supabase.rpc('chat_unread_counts')
-  const chatUnread = (chatCounts ?? []).reduce((n: number, c: { unread: number }) => n + Number(c.unread), 0)
+  // One shared fetch for the whole request (the member, access, settings and badge counts).
+  const shell = (await getShell())!
+  const muted = new Set(computeMutedKinds(shell.prefs, shell.settings.mandatory_groups))
+  const unreadCount = Object.entries(shell.unread).reduce((n, [kind, c]) => (muted.has(kind) ? n : n + Number(c)), 0)
+  const chatUnread = shell.chatUnread
 
   const caps = await getCaps(me)
   const scopes = await getScopes(me)
@@ -48,7 +41,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex min-h-screen bg-neutral-50 text-neutral-900">
-      <Nav role={me.role} isDirector={me.is_director} showAnalytics={caps.view_analytics} showAdmin={scopes.size > 0} unread={count ?? 0} chatUnread={chatUnread} orgName={orgRow?.value || 'MUI Team'} />
+      <Nav role={me.role} isDirector={me.is_director} showAnalytics={caps.view_analytics} showAdmin={scopes.size > 0} unread={unreadCount} chatUnread={chatUnread} orgName={shell.settings.org_name || 'MUI Team'} />
+      <LiveSync memberId={me.id} />
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center justify-between gap-3 border-b border-neutral-200 bg-white px-4 py-3">
           <div className="flex min-w-0 items-center gap-3">

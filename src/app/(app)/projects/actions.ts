@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { requireMember, isExecOrAbove } from '@/lib/auth'
 import { can, dbFor } from '@/lib/permissions'
+import { deliverSoon } from '@/lib/notify/after'
 
 
 export interface ProjectState { error?: string; ok?: string }
@@ -21,6 +22,7 @@ async function projectDb(me: Awaited<ReturnType<typeof requireMember>>, projectI
 }
 
 export async function createProject(fd: FormData) {
+  deliverSoon()
   const me = await requireMember()
   if (!(await can(me, 'create_project'))) return
 
@@ -42,6 +44,7 @@ export async function createProject(fd: FormData) {
 }
 
 export async function updateProject(_prev: ProjectState | undefined, fd: FormData): Promise<ProjectState> {
+  deliverSoon()
   const me = await requireMember()
   const id = String(fd.get('id') ?? '')
   const supabase = await projectDb(me, id)
@@ -68,6 +71,7 @@ export async function updateProject(_prev: ProjectState | undefined, fd: FormDat
 }
 
 export async function addProjectMember(fd: FormData) {
+  deliverSoon()
   const me = await requireMember()
   const projectId = String(fd.get('project_id') ?? '')
   const memberId = String(fd.get('member_id') ?? '')

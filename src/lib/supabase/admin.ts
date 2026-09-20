@@ -1,6 +1,7 @@
 import 'server-only'
 import { createClient } from '@supabase/supabase-js'
 import { supabaseUrl } from '@/lib/supabase/url'
+import { fetchWithTimeout } from '@/lib/supabase/fetch'
 
 /**
  * Service-role client. Bypasses RLS - server-side only, and only after the
@@ -11,5 +12,6 @@ export function createAdminClient() {
   if (!key) throw new Error('SUPABASE_SERVICE_ROLE_KEY is not set')
   return createClient(supabaseUrl(), key, {
     auth: { persistSession: false, autoRefreshToken: false },
+    global: { fetch: fetchWithTimeout },
   })
 }

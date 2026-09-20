@@ -10,6 +10,8 @@ import { Card, PageTitle, PriorityLabel, SectionTitle, StatusBadge } from '@/com
 import { AddLinkForm, UploadFileForm } from '../../resources/UploadForms'
 import { addProjectMember, removeProjectMember } from '../actions'
 import { ProjectEditForm } from './ProjectEditForm'
+import { deleteProject } from '../../manage-actions'
+import { ConfirmButton } from '@/components/ConfirmButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -107,6 +109,12 @@ export default async function ProjectPage({
                   departments={(departments ?? []).map((d) => ({ id: d.id, label: d.name }))}
                   people={members.map((m) => ({ id: m.id, label: m.full_name }))}
                 />
+                {(me.role === 'super_admin' || project.owner_id === me.id || project.created_by === me.id) && (
+                  <form action={deleteProject} className="mt-4 border-t border-neutral-200 pt-3">
+                    <input type="hidden" name="id" value={project.id} />
+                    <ConfirmButton message="Delete this project? Its tasks stay but are no longer grouped under it." className="text-sm font-medium text-red-600 hover:underline">Delete project</ConfirmButton>
+                  </form>
+                )}
               </div>
             </details>
           )}

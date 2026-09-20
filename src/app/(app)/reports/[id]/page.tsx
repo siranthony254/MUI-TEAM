@@ -7,6 +7,8 @@ import type { Report } from '@/lib/types'
 import { Card, PageTitle, SectionTitle } from '@/components/ui'
 import { AttachmentsPanel } from '@/components/attachments/AttachmentsPanel'
 import { ReportForm } from './ReportForm'
+import { deleteReport } from '../../manage-actions'
+import { ConfirmButton } from '@/components/ConfirmButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -48,6 +50,10 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
             <SectionTitle>Attachments</SectionTitle>
             <AttachmentsPanel type="report" entityId={report.id} canAdd viewerId={me.id} isSuperAdmin={me.role === 'super_admin'} />
           </Card>
+          <form action={deleteReport} className="mt-4">
+            <input type="hidden" name="id" value={report.id} />
+            <ConfirmButton message="Discard this draft report?" className="text-sm font-medium text-red-600 hover:underline">Delete draft</ConfirmButton>
+          </form>
         </>
       ) : (
         <div className="space-y-4">
@@ -61,6 +67,12 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
             <SectionTitle>Attachments</SectionTitle>
             <AttachmentsPanel type="report" entityId={report.id} canAdd={false} viewerId={me.id} isSuperAdmin={me.role === 'super_admin'} />
           </Card>
+          {me.role === 'super_admin' && (
+            <form action={deleteReport}>
+              <input type="hidden" name="id" value={report.id} />
+              <ConfirmButton message="Delete this submitted report permanently?" className="text-sm font-medium text-red-600 hover:underline">Delete report (system admin)</ConfirmButton>
+            </form>
+          )}
         </div>
       )}
     </>

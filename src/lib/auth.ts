@@ -1,24 +1,14 @@
 import 'server-only'
 import { cache } from 'react'
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
-import { verifyUser } from '@/lib/supabase/verify'
+import { getShell } from '@/lib/shell'
 import type { TeamMember, TeamRole } from '@/lib/types'
 
-/** The signed-in team member, or null if signed out / not invited. */
+/** The signed-in team member, or null if signed out / not invited / deactivated. */
 export const getMember = cache(async (): Promise<TeamMember | null> => {
-  const supabase = await createClient()
-  const { user } = await verifyUser(supabase)
-  if (!user) return null
-  const { data } = await supabase
-    .from('team_members')
-    .select('*')
-    .eq('id', user.id)
-    .eq('active', true)
-    .maybeSingle()
-  if (!data) return null
-  const { data: directed } = await supabase.from('departments').select('id').eq('director_id', user.id)
-  return { ...(data as TeamMember), directed_departments: (directed ?? []).map((d) => d.id) }
+  const shell = await getShell()
+  if (!shell?.member || !shell.member.active) return null
+  return { ...shell.member, directed_departments: shell.directed }
 })
 
 export async function requireMember(): Promise<TeamMember> {

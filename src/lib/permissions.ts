@@ -4,6 +4,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isExecOrAbove } from '@/lib/auth'
+import { getShell } from '@/lib/shell'
 import type { TeamMember } from '@/lib/types'
 
 export * from '@/lib/capabilities'
@@ -17,10 +18,9 @@ export function levelOf(me: TeamMember): Level {
 }
 
 export const getMatrix = cache(async (): Promise<Matrix> => {
-  const supabase = await createClient()
-  const { data } = await supabase.from('role_permissions').select('level, capability, allowed')
+  const shell = await getShell()
   const m: Matrix = JSON.parse(JSON.stringify(DEFAULT_MATRIX))
-  for (const r of data ?? []) {
+  for (const r of shell?.matrix ?? []) {
     if (r.level in m && r.capability in m.executive) m[r.level as EditableLevel][r.capability as Capability] = !!r.allowed
   }
   return m
@@ -45,6 +45,8 @@ export const getCaps = cache(async (me: TeamMember): Promise<Record<Capability, 
 
 /** This person's live (unexpired) grants. Reads their own rows, which the database allows. */
 export const getGrants = cache(async (memberId: string) => {
+  const shell = await getShell()
+  if (shell && shell.user.id === memberId) return shell.grants     // already fetched (and already unexpired)
   const supabase = await createClient()
   const { data } = await supabase.from('member_grants').select('capability, allowed, expires_at').eq('member_id', memberId)
   const now = Date.now()

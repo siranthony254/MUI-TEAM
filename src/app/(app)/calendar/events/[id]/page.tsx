@@ -6,6 +6,8 @@ import { fmtDateTime, fmtDay } from '@/lib/time'
 import type { CalendarEvent } from '@/lib/types'
 import { Card, PageTitle } from '@/components/ui'
 import { deleteEvent } from '../../actions'
+import { EventEditForm } from '../../../ManageForms'
+import { ConfirmButton, ManagePanel } from '@/components/ConfirmButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -40,10 +42,13 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
         </dl>
         {e.description && <p className="mt-4 whitespace-pre-wrap text-sm">{e.description}</p>}
         {canDelete && (
-          <form action={deleteEvent} className="mt-4 border-t border-neutral-100 pt-3">
-            <input type="hidden" name="id" value={e.id} />
-            <button className="text-sm text-neutral-500 hover:text-red-600">Remove from calendar</button>
-          </form>
+          <>
+            <ManagePanel label="Edit event"><EventEditForm event={e} /></ManagePanel>
+            <form action={deleteEvent} className="mt-4 border-t border-neutral-100 pt-3">
+              <input type="hidden" name="id" value={e.id} />
+              <ConfirmButton message="Remove this event from the calendar?" className="text-sm font-medium text-red-600 hover:underline">Remove from calendar</ConfirmButton>
+            </form>
+          </>
         )}
       </Card>
     </>

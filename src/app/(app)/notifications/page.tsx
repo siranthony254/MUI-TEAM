@@ -4,7 +4,7 @@ import { requireMember } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { fmtDateTime } from '@/lib/time'
 import { CATEGORIES, groupOfKind, kindsOfCategory } from '@/lib/notify/groups'
-import { mutedKinds } from '@/lib/notify/muted'
+import { myMutedKinds } from '@/lib/notify/muted'
 import type { AppNotification } from '@/lib/types'
 import { Card, PageTitle } from '@/components/ui'
 
@@ -33,7 +33,7 @@ export default async function Notifications({ searchParams }: { searchParams: Pr
   const me = await requireMember()
   const supabase = await createClient()
 
-  const muted = await mutedKinds(supabase, me.id)
+  const muted = await myMutedKinds()
   let query = supabase.from('notifications').select('*').eq('recipient_id', me.id).order('created_at', { ascending: false }).limit(150)
   if (muted.length) query = query.not('kind', 'in', `(${muted.join(',')})`)
   const { data } = await query

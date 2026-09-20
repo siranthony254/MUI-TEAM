@@ -8,6 +8,9 @@ import { Card, PageTitle } from '@/components/ui'
 import { AttachmentsPanel } from '@/components/attachments/AttachmentsPanel'
 import { NewDecisionForm } from './DecisionForm'
 import { setDecisionStatus } from './actions'
+import { deleteDecision } from '../manage-actions'
+import { DecisionEditForm } from '../ManageForms'
+import { ConfirmButton, ManagePanel } from '@/components/ConfirmButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -107,6 +110,17 @@ export default async function Decisions({ searchParams }: { searchParams: Promis
                     <button name="status" value="active" className="rounded-lg border border-neutral-300 px-3 py-1 text-xs hover:bg-neutral-50">Reinstate</button>
                   )}
                 </form>
+              )}
+              {canEdit && (d.created_by === me.id || me.role === 'super_admin' || me.is_director) && (
+                <ManagePanel label="Edit or delete">
+                  <DecisionEditForm decision={d}
+                    people={(members ?? []).map((m) => ({ id: m.id, label: m.full_name }))}
+                    projects={(projects ?? []).map((p) => ({ id: p.id, label: p.name }))} />
+                  <form action={deleteDecision} className="mt-4 border-t border-neutral-200 pt-3">
+                    <input type="hidden" name="id" value={d.id} />
+                    <ConfirmButton message="Delete this decision from the record?" className="text-sm font-medium text-red-600 hover:underline">Delete decision</ConfirmButton>
+                  </form>
+                </ManagePanel>
               )}
             </Card>
           ))}

@@ -5,6 +5,8 @@ import type { Announcement } from '@/lib/types'
 import { Card, PageTitle } from '@/components/ui'
 import { AnnouncementForm } from './AnnouncementForm'
 import { deleteAnnouncement } from './actions'
+import { AnnouncementEditForm } from '../ManageForms'
+import { ConfirmButton, ManagePanel } from '@/components/ConfirmButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -55,10 +57,13 @@ export default async function Announcements() {
                   {author ? `${author.full_name}${author.title ? `, ${author.title}` : ''} · ` : ''}{fmtDateTime(a.publish_at)}
                 </p>
                 {me.is_director && (
-                  <form action={deleteAnnouncement} className="mt-2">
-                    <input type="hidden" name="id" value={a.id} />
-                    <button className="text-xs text-neutral-400 hover:text-red-600">Delete</button>
-                  </form>
+                  <ManagePanel label="Edit or delete">
+                    <AnnouncementEditForm announcement={a} />
+                    <form action={deleteAnnouncement} className="mt-4 border-t border-neutral-200 pt-3">
+                      <input type="hidden" name="id" value={a.id} />
+                      <ConfirmButton message="Delete this announcement? Notifications already sent stay in people's inboxes." className="text-sm font-medium text-red-600 hover:underline">Delete announcement</ConfirmButton>
+                    </form>
+                  </ManagePanel>
                 )}
               </Card>
             )

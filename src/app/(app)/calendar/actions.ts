@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { requireMember, isExecOrAbove } from '@/lib/auth'
 import { localInputToIso } from '@/lib/time'
 import { can, dbFor } from '@/lib/permissions'
+import { deliverSoon } from '@/lib/notify/after'
 
 
 export interface EventState { error?: string; ok?: string }
@@ -12,6 +13,7 @@ export interface EventState { error?: string; ok?: string }
 const KINDS = ['event', 'recording', 'publication', 'deadline', 'other']
 
 export async function createEvent(_prev: EventState | undefined, fd: FormData): Promise<EventState> {
+  deliverSoon()
   const me = await requireMember()
   if (!(await can(me, 'add_event'))) return { error: "You don't have permission to add calendar events." }
 

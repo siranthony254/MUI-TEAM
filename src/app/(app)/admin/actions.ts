@@ -7,6 +7,7 @@ import { applyGrants } from '@/lib/grants'
 import { requireMember } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { TeamRole } from '@/lib/types'
+import { deliverSoon } from '@/lib/notify/after'
 
 export interface AdminState { error?: string; ok?: string }
 
@@ -72,6 +73,7 @@ async function log(
  * The admin shares it privately; the member changes it under Account.
  */
 export async function addMember(_prev: AdminState | undefined, formData: FormData): Promise<AdminState> {
+  deliverSoon()
   const me = await requireScope('admin.people')
 
   const email = String(formData.get('email') ?? '').trim().toLowerCase()
@@ -130,6 +132,7 @@ export async function addMember(_prev: AdminState | undefined, formData: FormDat
 }
 
 export async function updateMember(_prev: AdminState | undefined, formData: FormData): Promise<AdminState> {
+  deliverSoon()
   const me = await requireScope('admin.people')
   const id = String(formData.get('id') ?? '')
   const role = String(formData.get('role') ?? '') as TeamRole
@@ -187,6 +190,7 @@ export async function updateMember(_prev: AdminState | undefined, formData: Form
 
 /** Issues a new one-time password and ends existing sign-in. The old password stops working immediately. */
 export async function resetAccess(_prev: AdminState | undefined, formData: FormData): Promise<AdminState> {
+  deliverSoon()
   const me = await requireScope('admin.people')
   const id = String(formData.get('id') ?? '')
   if (!id) return { error: 'Missing member.' }
@@ -209,6 +213,7 @@ export async function resetAccess(_prev: AdminState | undefined, formData: FormD
  * reports, activity) is preserved.
  */
 export async function deactivateMember(_prev: AdminState | undefined, formData: FormData): Promise<AdminState> {
+  deliverSoon()
   const me = await requireScope('admin.people')
   const id = String(formData.get('id') ?? '')
   const reassignTo = String(formData.get('reassign_to') ?? '')
@@ -265,6 +270,7 @@ export async function deactivateMember(_prev: AdminState | undefined, formData: 
 }
 
 export async function reactivateMember(_prev: AdminState | undefined, formData: FormData): Promise<AdminState> {
+  deliverSoon()
   const me = await requireScope('admin.people')
   const id = String(formData.get('id') ?? '')
   const admin = createAdminClient()
@@ -280,6 +286,7 @@ export async function reactivateMember(_prev: AdminState | undefined, formData: 
 }
 
 export async function addDepartment(formData: FormData) {
+  deliverSoon()
   const me = await requireScope('admin.departments')
   const name = String(formData.get('name') ?? '').trim()
   if (name.length < 2) return
@@ -291,6 +298,7 @@ export async function addDepartment(formData: FormData) {
 
 /** Saves the "Access & delegation" panel for one person. */
 export async function saveGrants(_prev: AdminState | undefined, formData: FormData): Promise<AdminState> {
+  deliverSoon()
   const me = await requireMember()
   const id = String(formData.get('member_id') ?? '')
   const error = await applyGrants(me, id, formData)

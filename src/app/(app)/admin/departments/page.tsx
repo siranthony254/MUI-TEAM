@@ -4,6 +4,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { Card, PageTitle, SectionTitle, buttonClass, inputClass } from '@/components/ui'
 import { ServiceKeyNotice } from '@/components/ServiceKeyNotice'
 import { saveDepartment } from './actions'
+import { deleteDepartment } from '../../manage-actions'
+import { ConfirmButton } from '@/components/ConfirmButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -44,6 +46,10 @@ export default async function DepartmentsAdmin() {
                   <span className="text-xs text-neutral-500">{members.length} member{members.length === 1 ? '' : 's'}</span>
                   <button className={buttonClass}>Save</button>
                 </div>
+              </form>
+              <form action={deleteDepartment} className="mt-2">
+                <input type="hidden" name="id" value={d.id} />
+                <ConfirmButton message={`Delete the ${d.name} department? Its people and tasks stay but lose the department, and its chat channel and messages are deleted.`} className="text-xs text-red-600 hover:underline">Delete department</ConfirmButton>
               </form>
             </Card>
           )

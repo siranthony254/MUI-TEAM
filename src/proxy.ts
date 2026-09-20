@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { supabaseUrl } from '@/lib/supabase/url'
 import { verifyUser } from '@/lib/supabase/verify'
+import { fetchWithTimeout } from '@/lib/supabase/fetch'
 
 // /api/cron authenticates itself with CRON_SECRET (no user session).
 const PUBLIC_PATHS = ['/login', '/forgot-password', '/auth/callback', '/api/cron']
@@ -13,6 +14,7 @@ export default async function proxy(req: NextRequest) {
     supabaseUrl(),
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key',
     {
+      global: { fetch: fetchWithTimeout },
       cookies: {
         getAll: () => req.cookies.getAll(),
         setAll(list) {
@@ -40,7 +42,8 @@ export default async function proxy(req: NextRequest) {
     url.search = ''
     return NextResponse.redirect(url)
   }
-  if (user && req.nextUrl.pathname === '/login') {
+  // (A signed-in person bounced here with an ?error= must be allowed to see it, or they'd loop forever.)
+  if (user && req.nextUrl.pathname === '/login' && !req.nextUrl.searchParams.has('error')) {
     const url = req.nextUrl.clone()
     url.pathname = '/'
     return NextResponse.redirect(url)

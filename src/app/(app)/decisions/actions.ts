@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { requireMember } from '@/lib/auth'
 import { can, dbFor } from '@/lib/permissions'
+import { deliverSoon } from '@/lib/notify/after'
 
 
 export interface DecisionState { error?: string; ok?: string }
@@ -11,6 +12,7 @@ export interface DecisionState { error?: string; ok?: string }
 const text = (fd: FormData, k: string) => String(fd.get(k) ?? '').trim() || null
 
 export async function createDecision(_prev: DecisionState | undefined, fd: FormData): Promise<DecisionState> {
+  deliverSoon()
   const me = await requireMember()
   if (!(await can(me, 'record_decision'))) return { error: "You don't have permission to record decisions." }
   const title = text(fd, 'title')
@@ -35,6 +37,7 @@ export async function createDecision(_prev: DecisionState | undefined, fd: FormD
 
 /** Decisions are never deleted: they are superseded or reversed, so the history stays. */
 export async function setDecisionStatus(fd: FormData) {
+  deliverSoon()
   const me = await requireMember()
   if (!(await can(me, 'record_decision'))) return
 

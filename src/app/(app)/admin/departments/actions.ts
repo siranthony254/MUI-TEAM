@@ -3,8 +3,10 @@
 import { revalidatePath } from 'next/cache'
 import { requireScope } from '@/lib/permissions'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { deliverSoon } from '@/lib/notify/after'
 
 export async function saveDepartment(fd: FormData) {
+  deliverSoon()
   const me = await requireScope('admin.departments')
   const id = String(fd.get('id') ?? '')
   const admin = createAdminClient()

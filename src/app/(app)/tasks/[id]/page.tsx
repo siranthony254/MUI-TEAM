@@ -13,6 +13,9 @@ import { StatusControls } from './StatusControls'
 import { HandOnForm } from '../HandOnForm'
 import { CommentForm, ExtensionForm } from './CollabPanels'
 import { decideExtension, deleteComment } from '../collab-actions'
+import { deleteTask } from '../../manage-actions'
+import { TaskEditForm } from '../../ManageForms'
+import { ConfirmButton, ManagePanel } from '@/components/ConfirmButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -115,6 +118,22 @@ export default async function TaskPage({
         )}
       </Card>
 
+      {isReviewer && (
+        <div className="mt-4">
+          <ManagePanel label="Edit task details">
+            <TaskEditForm
+              task={task}
+              projects={(projects ?? []).map((p) => ({ id: p.id, label: p.name }))}
+              departments={(departments ?? []).map((d) => ({ id: d.id, label: d.name }))}
+            />
+            <form action={deleteTask} className="mt-4 border-t border-neutral-200 pt-3">
+              <input type="hidden" name="id" value={task.id} />
+              <ConfirmButton message="Delete this task for good, with its comments and attachments?" className="text-sm font-medium text-red-600 hover:underline">Delete this task</ConfirmButton>
+            </form>
+          </ManagePanel>
+        </div>
+      )}
+
       {transitions.length > 0 && (
         <Card className="mt-4">
           <SectionTitle>Actions</SectionTitle>
@@ -136,7 +155,7 @@ export default async function TaskPage({
                 <p className="text-xs"><span className="font-semibold text-neutral-800">{nameOf(c.author_id)}</span><span className="ml-2 text-neutral-400">{fmtDateTime(c.created_at)}</span></p>
                 <p className="whitespace-pre-wrap">{c.body}</p>
                 {(c.author_id === me.id || me.role === 'super_admin') && (
-                  <form action={deleteComment}><input type="hidden" name="id" value={c.id} /><input type="hidden" name="task_id" value={task.id} /><button className="text-xs text-neutral-400 hover:text-red-600">Delete</button></form>
+                  <form action={deleteComment}><input type="hidden" name="id" value={c.id} /><input type="hidden" name="task_id" value={task.id} /><ConfirmButton message="Delete this comment?">Delete</ConfirmButton></form>
                 )}
               </li>
             ))}

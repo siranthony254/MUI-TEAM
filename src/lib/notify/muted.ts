@@ -1,17 +1,15 @@
 import 'server-only'
-import type { SupabaseClient } from '@supabase/supabase-js'
-import { GROUPS, parseMandatory } from './groups'
+import { GROUPS, channelOn, parseMandatory, type PrefRow } from './groups'
+import { getShell } from '@/lib/shell'
 
-/**
- * Notification kinds this person has switched off in-app (so the centre and the unread badge skip them).
- * Mandatory events are never muted.
- */
-export async function mutedKinds(supabase: SupabaseClient, memberId: string): Promise<string[]> {
-  const [{ data: prefs }, { data: mandatoryRow }] = await Promise.all([
-    supabase.from('notification_prefs').select('event_group, in_app').eq('member_id', memberId).eq('in_app', false),
-    supabase.from('org_settings').select('value').eq('key', 'mandatory_groups').maybeSingle(),
-  ])
-  const mandatory = parseMandatory(mandatoryRow?.value)
-  const off = new Set((prefs ?? []).map((p) => p.event_group).filter((g) => !mandatory.includes(g)))
-  return GROUPS.filter((g) => off.has(g.id)).flatMap((g) => g.kinds)
+/** Kinds this person doesn't want listed in-app (their setting, or the default for that event). Required events never are. */
+export function computeMutedKinds(prefs: PrefRow[], mandatoryValue: string | null | undefined): string[] {
+  const mandatory = parseMandatory(mandatoryValue)
+  return GROUPS.filter((g) => !channelOn(g, 'in_app', prefs, mandatory)).flatMap((g) => g.kinds)
+}
+
+/** Same, for the signed-in person, from the shared page data (no extra queries). */
+export async function myMutedKinds(): Promise<string[]> {
+  const shell = await getShell()
+  return shell ? computeMutedKinds(shell.prefs, shell.settings.mandatory_groups) : []
 }

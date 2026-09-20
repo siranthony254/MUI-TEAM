@@ -8,6 +8,9 @@ import { fmtDateTime } from '@/lib/time'
 import type { Resource } from '@/lib/types'
 import { Card, PageTitle, SectionTitle } from '@/components/ui'
 import { CopyLink, ReplaceFileForm, ReplaceLinkForm, ShareForm } from './ViewerPanels'
+import { deleteResource } from '../actions'
+import { ResourceEditForm } from '../../ManageForms'
+import { ConfirmButton, ManagePanel } from '@/components/ConfirmButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -61,6 +64,18 @@ export default async function ResourcePage({ params }: { params: Promise<{ id: s
           <CopyLink />
         </div>
       </Card>
+
+      {canReplace && (
+        <div className="mt-4">
+          <ManagePanel label="Edit details">
+            <ResourceEditForm resource={r} />
+            <form action={deleteResource} className="mt-4 border-t border-neutral-200 pt-3">
+              <input type="hidden" name="id" value={r.id} />
+              <ConfirmButton message="Delete this file and all of its earlier versions?" className="text-sm font-medium text-red-600 hover:underline">Delete this resource</ConfirmButton>
+            </form>
+          </ManagePanel>
+        </div>
+      )}
 
       <Card className="mt-4">
         <SectionTitle>Share with colleagues</SectionTitle>

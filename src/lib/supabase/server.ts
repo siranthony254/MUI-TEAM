@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { supabaseUrl } from '@/lib/supabase/url'
+import { fetchWithTimeout } from '@/lib/supabase/fetch'
 
 const url = supabaseUrl()
 const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
@@ -9,6 +10,7 @@ const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
 export async function createClient() {
   const store = await cookies()
   return createServerClient(url, anon, {
+    global: { fetch: fetchWithTimeout },
     cookies: {
       getAll: () => store.getAll(),
       setAll(list) {

@@ -476,6 +476,77 @@ async function main() {
     ok((noErr(await S3.client.from('team_members').select('success_measures, start_date').eq('id', S3.id).single())).success_measures.length === 0, 'success_measures should default to empty')
   })
 
+  // ---- migration 12: speed, edit/delete controls, push on updates ----
+  const has12 = !(await M.client.rpc('shell_data')).error
+  if (!has12) console.log('SKIP migration 12 tests (shell_data() not installed yet)')
+  if (has12) {
+    const SA = await mkUser('sysadmin', 'super_admin')
+    await t('shell_data(): one call returns the member, settings, matrix and unread counts', async () => {
+      const d = noErr(await M.client.rpc('shell_data'))
+      ok(d.member?.id === M.id, 'wrong member')
+      ok(typeof d.settings === 'object' && Array.isArray(d.matrix) && Array.isArray(d.grants) && Array.isArray(d.prefs), 'missing sections')
+      ok(typeof d.unread === 'object' && d.chat_unread !== undefined, 'missing unread')
+    })
+
+    const general = (await svc.from('channels').select('id').eq('kind', 'general').limit(1).single()).data.id
+    let msgId
+    await t('chat: author edits their own message ("edited" is stamped); others cannot; author/channel are immutable', async () => {
+      msgId = noErr(await M.client.from('messages').insert({ channel_id: general, author_id: M.id, body: `${P} hello` }).select('id').single()).id
+      const r = noErr(await M.client.from('messages').update({ body: `${P} hello (fixed)` }).eq('id', msgId).select('body, edited_at'))
+      ok(r.length === 1 && r[0].edited_at, 'edit not stamped')
+      const other = await D.client.from('messages').update({ body: `${P} hijack` }).eq('id', msgId).select('id')
+      ok(other.error || other.data.length === 0, 'a colleague edited someone else\'s message')
+      const admin = await SA.client.from('messages').update({ body: `${P} admin rewrite` }).eq('id', msgId).select('id')
+      ok(admin.error, 'a system admin rewrote someone else\'s words (they may only delete)')
+      isErr(await M.client.from('messages').update({ author_id: D.id }).eq('id', msgId), 'author was changed')
+    })
+
+    await t('chat: system admin can delete anyone\'s message; a peer cannot', async () => {
+      const peer = await D.client.from('messages').update({ deleted_at: new Date().toISOString() }).eq('id', msgId).select('id')
+      ok(peer.error || peer.data.length === 0, 'a peer deleted someone else\'s message')
+      const r = noErr(await SA.client.from('messages').update({ deleted_at: new Date().toISOString() }).eq('id', msgId).select('id'))
+      ok(r.length === 1, 'system admin could not delete a message')
+    })
+
+    await t('chat push: a message notifies others in the channel; muting a chat stops it', async () => {
+      noErr(await E2.client.from('channel_reads').upsert({ channel_id: general, member_id: E2.id, muted: true }, { onConflict: 'channel_id,member_id' }))
+      const m2 = noErr(await M.client.from('messages').insert({ channel_id: general, author_id: M.id, body: `${P} broadcast` }).select('id').single()).id
+      const got = async (u) => ((await svc.from('notifications').select('id').eq('recipient_id', u.id).eq('kind', 'chat').like('dedupe_key', `chat:${m2}:%`)).data ?? []).length
+      ok((await got(D)) === 1, 'unmuted colleague got no chat notification')
+      ok((await got(E2)) === 0, 'muted colleague was still notified')
+      ok((await got(M)) === 0, 'author notified about their own message')
+    })
+
+    await t('team update: changing someone\'s title/responsibilities notifies them', async () => {
+      const before = (await notes(M, 'team_update')).length
+      noErr(await svc.from('team_members').update({ title: `${P} Lead`, responsibilities: ['Own the calendar'] }).eq('id', M.id))
+      const after = await notes(M, 'team_update')
+      ok(after.length === before + 1, 'no team_update notification for the profile change')
+    })
+
+    await t('controls: only the assigner edits/deletes a task; only a draft report deletes for its author', async () => {
+      const id = noErr(await E.client.from('tasks').insert({ title: `${P} controls`, assigned_by: E.id, assignee_id: M.id, due_at: daysFromNow(3) }).select('id').single()).id
+      const peer = await D.client.from('tasks').delete().eq('id', id).select('id')
+      ok(peer.error || peer.data.length === 0, 'a peer deleted a task')
+      const asg = await M.client.from('tasks').delete().eq('id', id).select('id')
+      ok(asg.error || asg.data.length === 0, 'the assignee deleted a task set by someone else')
+      ok((noErr(await E.client.from('tasks').delete().eq('id', id).select('id'))).length === 1, 'assigner could not delete')
+      const rep = noErr(await M.client.from('reports').insert({ author_id: M.id, kind: 'personal', period_start: '2026-09-01', period_end: '2026-09-07', status: 'draft' }).select('id').single()).id
+      ok((noErr(await M.client.from('reports').delete().eq('id', rep).select('id'))).length === 1, 'author could not delete own draft')
+    })
+
+    await t('deleting a user (service role) reassigns via app; auth user removal cascades the profile', async () => {
+      const X = await mkUser('doomed', 'member')
+      const xt = noErr(await E.client.from('tasks').insert({ title: `${P} orphan`, assigned_by: E.id, assignee_id: X.id, due_at: daysFromNow(3) }).select('id').single()).id
+      noErr(await svc.from('tasks').update({ assignee_id: M.id }).eq('id', xt))
+      const r = await svc.auth.admin.deleteUser(X.id)
+      ok(!r.error, r.error?.message)
+      created.users = created.users.filter((u) => u !== X.id)
+      ok(((await svc.from('team_members').select('id').eq('id', X.id)).data ?? []).length === 0, 'profile survived account deletion')
+      ok((noErr(await svc.from('tasks').select('assignee_id').eq('id', xt).single())).assignee_id === M.id, 'reassigned task lost')
+    })
+  }
+
 }
 
 async function cleanup() {

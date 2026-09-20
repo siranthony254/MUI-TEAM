@@ -81,6 +81,14 @@ export async function runDispatch(): Promise<DispatchResult> {
   }
 }
 
+/** Runs `fn` over `items` with at most `n` in flight at once. */
+async function pool<T>(items: T[], n: number, fn: (item: T) => Promise<void>) {
+  let i = 0
+  await Promise.all(Array.from({ length: Math.min(n, items.length) }, async () => {
+    while (i < items.length) await fn(items[i++])
+  }))
+}
+
 export async function dispatchPending(): Promise<Omit<DispatchResult, "reminders" | "spawned">> {
   const admin = createAdminClient()
   const out = { processed: 0, sent: { email: 0, push: 0, sms: 0 }, failed: 0 }
@@ -99,14 +107,17 @@ export async function dispatchPending(): Promise<Omit<DispatchResult, "reminders
     .limit(BATCH)
 
   const rows = (data ?? []) as unknown as Row[]
+  out.processed = rows.length
+  if (rows.length === 0) return out
 
-  // Per-person, per-event preferences, and the events the organisation has made mandatory.
+  // Everything the decisions need, fetched once for the whole batch (not once per notification).
   const recipientIds = [...new Set(rows.map((r) => r.recipient_id))]
-  const [{ data: prefRows }, { data: mandatoryRow }] = await Promise.all([
-    recipientIds.length
-      ? admin.from('notification_prefs').select('member_id, event_group, in_app, email, push, sms').in('member_id', recipientIds)
-      : Promise.resolve({ data: [] as (PrefRow & { member_id: string })[] }),
+  const [{ data: prefRows }, { data: mandatoryRow }, { data: subRows }] = await Promise.all([
+    admin.from('notification_prefs').select('member_id, event_group, in_app, email, push, sms').in('member_id', recipientIds),
     admin.from('org_settings').select('value').eq('key', 'mandatory_groups').maybeSingle(),
+    channelEnabled.push()
+      ? admin.from('push_subscriptions').select('endpoint, p256dh, auth, member_id').in('member_id', recipientIds)
+      : Promise.resolve({ data: [] as (PushSub & { member_id: string })[] }),
   ])
   const mandatory = parseMandatory(mandatoryRow?.value)
   const prefsBy = new Map<string, Map<string, PrefRow>>()
@@ -114,71 +125,78 @@ export async function dispatchPending(): Promise<Omit<DispatchResult, "reminders
     if (!prefsBy.has(p.member_id)) prefsBy.set(p.member_id, new Map())
     prefsBy.get(p.member_id)!.set(p.event_group, p)
   }
+  const subsBy = new Map<string, (PushSub & { member_id: string })[]>()
+  for (const sub of (subRows ?? []) as (PushSub & { member_id: string })[]) {
+    subsBy.set(sub.member_id, [...(subsBy.get(sub.member_id) ?? []), sub])
+  }
+
+  // Decide, per notification and channel, whether to send or to simply mark it handled.
+  type Job = { row: Row; ch: Channel; send: () => Promise<void> }
+  const jobs: Job[] = []
+  const skip: Record<Channel, string[]> = { email: [], push: [], sms: [] }
 
   for (const row of rows) {
-    out.processed++
     const who = row.recipient
-    const msg = { title: row.title, body: row.body, link: row.link }
-
-    /** Claim a channel; returns false if another run already took it. */
-    const claim = async (ch: Channel) => {
-      const { data: won } = await admin
-        .from('notifications')
-        .update({ [COLUMN[ch]]: new Date().toISOString() })
-        .eq('id', row.id)
-        .is(COLUMN[ch], null)
-        .select('id')
-      return (won ?? []).length > 0
-    }
-    const release = (ch: Channel) =>
-      admin.from('notifications').update({ [COLUMN[ch]]: null }).eq('id', row.id)
-
-    const run = async (ch: Channel, wanted: boolean, send: () => Promise<void>) => {
-      if (row[COLUMN[ch] as keyof Row]) return // already handled
-      // Skipped by preference / config / missing contact detail: mark handled.
-      if (!who || !who.active || !wanted || !channelEnabled[ch]()) {
-        await claim(ch)
-        return
-      }
-      if (!(await claim(ch))) return
-      try {
-        await send()
-        out.sent[ch]++
-      } catch (err) {
-        out.failed++
-        console.error(`[notify] ${ch} failed for ${row.id}:`, err instanceof Error ? err.message : err)
-        await release(ch)
-        await admin.from('notifications')
-          .update({ delivery_attempts: row.delivery_attempts + 1 }).eq('id', row.id)
-      }
-    }
-
-    // A sender can narrow the channels for an assignment/delegation; the recipient's own
-    // opt-ins still apply on top (nobody gets SMS without opting in and having a number).
+    const msg = { title: row.title, body: row.body, link: row.link, kind: row.kind }
+    // A sender can narrow the channels for an assignment/delegation; the recipient's own opt-ins
+    // still apply on top (nobody gets SMS without opting in and having a number).
     const allowed = (ch: Channel) => !row.channels || row.channels.includes(ch)
-    // The recipient's event settings (a mandatory event cannot be switched off).
     const group = groupOfKind(row.kind)
     const myPrefs = prefsBy.get(row.recipient_id) ?? new Map<string, PrefRow>()
-    const eventWants = (ch: 'email' | 'push' | 'sms') => channelOn(group, ch, myPrefs, mandatory)
-
-    await run('email', allowed('email') && eventWants('email') && !!who?.notify_email && !!who?.email, () => sendEmail(who!.email, who!.full_name, msg))
-
+    const eventWants = (ch: Channel) => channelOn(group, ch, myPrefs, mandatory)
     const phone = normalizePhone(who?.phone ?? null)
-    // SMS costs money: only when the event is set to text (or the sender explicitly chose SMS, or it's urgent).
-    const smsWorthy = eventWants('sms') || !!row.channels?.includes('sms') || row.kind === 'announcement_urgent'
-    await run('sms', allowed('sms') && !!who?.notify_sms && !!phone && smsWorthy, () => sendSms(phone!, msg))
+    const subs = subsBy.get(row.recipient_id) ?? []
+    const live = !!who && who.active
 
-    await run('push', allowed('push') && eventWants('push') && !!who?.notify_push, async () => {
-      const { data: subs } = await admin
-        .from('push_subscriptions')
-        .select('endpoint, p256dh, auth, member_id')
-        .eq('member_id', row.recipient_id)
-      for (const s of (subs ?? []) as (PushSub & { member_id: string })[]) {
-        const alive = await sendPush(s, msg)
-        if (!alive) await admin.from('push_subscriptions').delete().eq('endpoint', s.endpoint)
-      }
-    })
+    const plan: Record<Channel, { wanted: boolean; send: () => Promise<void> }> = {
+      email: {
+        wanted: live && allowed('email') && eventWants('email') && !!who!.notify_email && !!who!.email,
+        send: () => sendEmail(who!.email, who!.full_name, msg),
+      },
+      // SMS costs money: only when the event is set to text (or the sender chose SMS, or it's urgent).
+      sms: {
+        wanted: live && allowed('sms') && !!who!.notify_sms && !!phone
+          && (eventWants('sms') || !!row.channels?.includes('sms') || row.kind === 'announcement_urgent'),
+        send: () => sendSms(phone!, msg),
+      },
+      push: {
+        wanted: live && allowed('push') && eventWants('push') && !!who!.notify_push && subs.length > 0,
+        send: async () => {
+          const results = await Promise.allSettled(subs.map((sub) => sendPush(sub, msg)))
+          for (const [i, r] of results.entries()) {
+            if (r.status === 'fulfilled' && r.value === false) await admin.from('push_subscriptions').delete().eq('endpoint', subs[i].endpoint)
+          }
+          const failure = results.find((r) => r.status === 'rejected')
+          if (failure && results.every((r) => r.status === 'rejected')) throw (failure as PromiseRejectedResult).reason
+        },
+      },
+    }
 
+    for (const ch of ['email', 'sms', 'push'] as Channel[]) {
+      if (row[COLUMN[ch] as keyof Row]) continue               // already handled
+      if (plan[ch].wanted && channelEnabled[ch]()) jobs.push({ row, ch, send: plan[ch].send })
+      else skip[ch].push(row.id)                                 // nothing to send: just mark it handled
+    }
   }
+
+  // One update per channel for everything that has nothing to send (instead of one per notification).
+  const stamp = new Date().toISOString()
+  await Promise.all((['email', 'sms', 'push'] as Channel[]).filter((ch) => skip[ch].length).map((ch) =>
+    admin.from('notifications').update({ [COLUMN[ch]]: stamp }).in('id', skip[ch]).is(COLUMN[ch], null)))
+
+  // Real deliveries, several at a time. Each is claimed first so two runs never double-send.
+  await pool(jobs, 8, async ({ row, ch, send }) => {
+    const { data: won } = await admin.from('notifications').update({ [COLUMN[ch]]: new Date().toISOString() })
+      .eq('id', row.id).is(COLUMN[ch], null).select('id')
+    if (!(won ?? []).length) return
+    try {
+      await send()
+      out.sent[ch]++
+    } catch (err) {
+      out.failed++
+      console.error(`[notify] ${ch} failed for ${row.id}:`, err instanceof Error ? err.message : err)
+      await admin.from('notifications').update({ [COLUMN[ch]]: null, delivery_attempts: row.delivery_attempts + 1 }).eq('id', row.id)
+    }
+  })
   return out
 }
