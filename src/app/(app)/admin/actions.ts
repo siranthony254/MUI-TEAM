@@ -8,6 +8,7 @@ import { requireMember } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { TeamRole } from '@/lib/types'
 import { deliverSoon } from '@/lib/notify/after'
+import { channelEnabled, normalizePhone, sendWelcomeEmail, sendWelcomeSms } from '@/lib/notify/channels'
 
 export interface AdminState { error?: string; ok?: string }
 
@@ -69,8 +70,10 @@ async function log(
 }
 
 /**
- * Creates a login for a new team member with a one-time temporary password.
- * The admin shares it privately; the member changes it under Account.
+ * Creates a login for a new team member with a one-time temporary password, then delivers it
+ * automatically: emailed always (when email is configured), texted too when a phone number was
+ * given and SMS is configured. Only falls back to showing it on screen if neither could be sent.
+ * The member changes it under Account once they sign in.
  */
 export async function addMember(_prev: AdminState | undefined, formData: FormData): Promise<AdminState> {
   deliverSoon()
@@ -124,11 +127,30 @@ export async function addMember(_prev: AdminState | undefined, formData: FormDat
   revalidatePath('/admin')
   revalidatePath('/people')
   const note = grantError ? ` (Their access settings were not saved: ${grantError})` : ''
-  return {
-    ok: (shown
-      ? `${full_name} added. Temporary password (shown once — share it privately): ${shown}`
-      : `${full_name} added. They already had an account, so their existing password still works.`) + note,
+
+  if (!shown) {
+    return { ok: `${full_name} added. They already had an account, so their existing password still works.${note}` }
   }
+
+  // Deliver the temporary password ourselves — email always attempted, SMS too when a number was given.
+  const sentTo: string[] = []
+  const failedChannels: string[] = []
+  if (channelEnabled.email()) {
+    try { await sendWelcomeEmail(email, full_name, shown); sentTo.push('emailed') }
+    catch (err) { failedChannels.push('email'); console.error('[addMember] welcome email failed:', err) }
+  }
+  const validPhone = normalizePhone(phone)
+  if (validPhone && channelEnabled.sms()) {
+    try { await sendWelcomeSms(validPhone, shown); sentTo.push('texted') }
+    catch (err) { failedChannels.push('SMS'); console.error('[addMember] welcome SMS failed:', err) }
+  }
+
+  if (sentTo.length > 0) {
+    const missed = failedChannels.length ? ` (${failedChannels.join(' and ')} could not be sent — password: ${shown})` : ''
+    return { ok: `${full_name} added and ${sentTo.join(' and ')} their login.${missed}${note}` }
+  }
+  // Nothing configured to send automatically, or every attempt failed: fall back to showing it here.
+  return { ok: `${full_name} added. Temporary password (shown once — share it privately): ${shown}${note}` }
 }
 
 export async function updateMember(_prev: AdminState | undefined, formData: FormData): Promise<AdminState> {
@@ -188,7 +210,11 @@ export async function updateMember(_prev: AdminState | undefined, formData: Form
   return { ok: 'Saved.' }
 }
 
-/** Issues a new one-time password and ends existing sign-in. The old password stops working immediately. */
+/**
+ * Issues a new one-time password and ends existing sign-in; the old password stops working
+ * immediately. Delivered the same way as a new member's first password: emailed, and texted
+ * too if they have a number on file and SMS is configured.
+ */
 export async function resetAccess(_prev: AdminState | undefined, formData: FormData): Promise<AdminState> {
   deliverSoon()
   const me = await requireScope('admin.people')
@@ -202,8 +228,24 @@ export async function resetAccess(_prev: AdminState | undefined, formData: FormD
   const { error } = await admin.auth.admin.updateUserById(id, { password })
   if (error) return { error: error.message }
 
-  const { data: m } = await admin.from('team_members').select('full_name').eq('id', id).maybeSingle()
+  const { data: m } = await admin.from('team_members').select('full_name, email, phone').eq('id', id).maybeSingle()
   await log(me.id, 'member.access_reset', 'member', id, `${me.full_name} reset access for ${m?.full_name ?? 'a member'}`)
+
+  const sentTo: string[] = []
+  const failedChannels: string[] = []
+  if (m?.email && channelEnabled.email()) {
+    try { await sendWelcomeEmail(m.email, m.full_name, password); sentTo.push('emailed') }
+    catch (err) { failedChannels.push('email'); console.error('[resetAccess] email failed:', err) }
+  }
+  const validPhone = normalizePhone(m?.phone ?? null)
+  if (validPhone && channelEnabled.sms()) {
+    try { await sendWelcomeSms(validPhone, password); sentTo.push('texted') }
+    catch (err) { failedChannels.push('SMS'); console.error('[resetAccess] SMS failed:', err) }
+  }
+  if (sentTo.length > 0) {
+    const missed = failedChannels.length ? ` (${failedChannels.join(' and ')} could not be sent — password: ${password})` : ''
+    return { ok: `Access reset and ${sentTo.join(' and ')} the new password to ${m?.full_name ?? 'them'}.${missed}` }
+  }
   return { ok: `New temporary password (shown once — share it privately): ${password}` }
 }
 
