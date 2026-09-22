@@ -31,12 +31,12 @@ export function QuickAdd({ items }: { items: QuickItem[] }) {
         <Plus size={16} aria-hidden /> Create
       </button>
       {open && (
-        <ul role="menu" className="absolute right-0 z-30 mt-2 w-64 overflow-hidden rounded-xl border border-neutral-200 bg-white py-1 shadow-lg">
+        <ul role="menu" className="absolute right-0 z-30 mt-2 w-64 overflow-hidden rounded-xl border border-neutral-200 bg-white py-1 shadow-lg dark:border-white/10 dark:bg-[#101C2C]">
           {items.map((i) => (
             <li key={i.href + i.label} role="none">
-              <Link role="menuitem" href={i.href} onClick={() => setOpen(false)} className="block px-4 py-2 hover:bg-amber-50">
-                <span className="block text-sm font-medium text-neutral-900">{i.label}</span>
-                <span className="block text-xs text-neutral-500">{i.hint}</span>
+              <Link role="menuitem" href={i.href} onClick={() => setOpen(false)} className="block px-4 py-2 hover:bg-amber-50 dark:hover:bg-amber-500/10">
+                <span className="block text-sm font-medium text-neutral-900 dark:text-neutral-100">{i.label}</span>
+                <span className="block text-xs text-neutral-500 dark:text-neutral-400">{i.hint}</span>
               </Link>
             </li>
           ))}

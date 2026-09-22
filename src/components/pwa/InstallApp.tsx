@@ -25,11 +25,11 @@ export function InstallCard() {
   if (!pwa.ready) return null
 
   if (pwa.installed) {
-    return <p className="text-sm text-green-700">MUI Team is installed on this device.</p>
+    return <p className="text-sm text-green-700 dark:text-green-400">MUI Team is installed on this device.</p>
   }
   return (
     <div>
-      <p className="text-sm text-neutral-600">Install MUI Team for one-tap access, a full-screen app, and push notifications on your phone.</p>
+      <p className="text-sm text-neutral-600 dark:text-neutral-400">Install MUI Team for one-tap access, a full-screen app, and push notifications on your phone.</p>
       {pwa.canPrompt ? (
         <button
           disabled={busy}
@@ -40,7 +40,7 @@ export function InstallCard() {
       ) : pwa.ios ? (
         <IosSteps />
       ) : (
-        <p className="mt-2 text-sm text-neutral-500">
+        <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
           Use your browser&apos;s menu: <strong>Install app</strong> or <strong>Add to Home screen</strong>.
         </p>
       )}
@@ -63,7 +63,7 @@ export function InstallBanner({ tone = 'light' }: { tone?: 'light' | 'dark' }) {
 
   const dark = tone === 'dark'
   return (
-    <div className={`rounded-xl p-3 text-sm ${dark ? 'bg-white/10 text-white' : 'border border-amber-300 bg-amber-50 text-amber-950'}`}>
+    <div className={`rounded-xl p-3 text-sm ${dark ? 'bg-white/10 text-white' : 'border border-amber-300 bg-amber-50 text-amber-950 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200'}`}>
       <div className="flex items-center gap-3">
         <Download size={18} aria-hidden className="shrink-0" />
         <p className="flex-1">Install MUI Team on this device.</p>

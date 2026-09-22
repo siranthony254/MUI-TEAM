@@ -53,7 +53,9 @@ export function Toaster() {
           key={t.id}
           role={t.kind === 'error' ? 'alert' : 'status'}
           className={`animate-pop-in pointer-events-auto flex max-w-sm items-start gap-2 rounded-xl border px-4 py-3 text-sm shadow-lg backdrop-blur ${
-            t.kind === 'error' ? 'border-red-200 bg-red-50/95 text-red-800' : 'border-green-200 bg-green-50/95 text-green-800'
+            t.kind === 'error'
+              ? 'border-red-200 bg-red-50/95 text-red-800 dark:border-red-500/30 dark:bg-red-500/15 dark:text-red-300'
+              : 'border-green-200 bg-green-50/95 text-green-800 dark:border-green-500/30 dark:bg-green-500/15 dark:text-green-300'
           }`}
         >
           {t.kind === 'error' ? <XCircle size={18} className="mt-0.5 shrink-0" aria-hidden /> : <CheckCircle2 size={18} className="mt-0.5 shrink-0" aria-hidden />}

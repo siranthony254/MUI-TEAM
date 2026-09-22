@@ -41,24 +41,24 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   ]
 
   return (
-    <div className="flex min-h-screen bg-[#F8F6F2] text-neutral-900">
+    <div className="flex min-h-screen bg-[#F8F6F2] text-neutral-900 dark:bg-[#0B1420] dark:text-neutral-100">
       <Nav role={me.role} isDirector={me.is_director} showAnalytics={caps.view_analytics} showAdmin={scopes.size > 0} unread={unreadCount} chatUnread={chatUnread} orgName={shell.settings.org_name || 'MUI Team'} />
       <LiveSync memberId={me.id} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center justify-between gap-3 border-b border-neutral-200/70 bg-white/85 px-4 py-3 backdrop-blur supports-[backdrop-filter]:sticky supports-[backdrop-filter]:top-0 supports-[backdrop-filter]:z-10">
+        <header className="flex items-center justify-between gap-3 border-b border-neutral-200/70 bg-white/85 px-4 py-3 backdrop-blur supports-[backdrop-filter]:sticky supports-[backdrop-filter]:top-0 supports-[backdrop-filter]:z-10 dark:border-white/10 dark:bg-[#0B1420]/85">
           <div className="flex min-w-0 items-center gap-3">
             <Avatar name={me.full_name} url={me.avatar_url} size={36} />
             <div className="min-w-0">
             <p className="truncate text-sm font-semibold">{me.full_name}</p>
-            <p className="truncate text-xs text-neutral-500">{me.title ?? ROLE_LABEL[me.role]}{me.is_director ? ' · Executive Director' : ''}</p>
+            <p className="truncate text-xs text-neutral-500 dark:text-neutral-400">{me.title ?? ROLE_LABEL[me.role]}{me.is_director ? ' · Executive Director' : ''}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {me.role !== 'guest' && <Link href="/search" aria-label="Search" className="rounded-lg p-2 text-neutral-600 hover:bg-neutral-100"><Search size={18} aria-hidden /></Link>}
+            {me.role !== 'guest' && <Link href="/search" aria-label="Search" className="rounded-lg p-2 text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-white/10"><Search size={18} aria-hidden /></Link>}
             {quickItems.length > 0 && <QuickAdd items={quickItems} />}
-            <Link href="/account" className="hidden rounded-lg px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 sm:block">Account</Link>
+            <Link href="/account" className="hidden rounded-lg px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-white/10 sm:block">Account</Link>
             <form action={signOut}>
-              <button className="rounded-lg px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100">Sign out</button>
+              <button className="rounded-lg px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-white/10">Sign out</button>
             </form>
           </div>
         </header>

@@ -4,14 +4,14 @@ import type { TaskStatus, TaskPriority } from '@/lib/types'
 import { STATUS_LABEL } from '@/lib/types'
 
 const STATUS_STYLE: Record<TaskStatus, string> = {
-  not_started: 'bg-neutral-100 text-neutral-700',
-  in_progress: 'bg-blue-100 text-blue-800',
-  submitted: 'bg-purple-100 text-purple-800',
-  under_review: 'bg-purple-100 text-purple-800',
-  needs_revision: 'bg-red-100 text-red-800',
-  blocked: 'bg-orange-100 text-orange-800',
-  completed: 'bg-green-100 text-green-800',
-  closed: 'bg-neutral-200 text-neutral-600',
+  not_started: 'bg-neutral-100 text-neutral-700 dark:bg-white/10 dark:text-neutral-300',
+  in_progress: 'bg-blue-100 text-blue-800 dark:bg-blue-500/15 dark:text-blue-300',
+  submitted: 'bg-purple-100 text-purple-800 dark:bg-purple-500/15 dark:text-purple-300',
+  under_review: 'bg-purple-100 text-purple-800 dark:bg-purple-500/15 dark:text-purple-300',
+  needs_revision: 'bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-300',
+  blocked: 'bg-orange-100 text-orange-800 dark:bg-orange-500/15 dark:text-orange-300',
+  completed: 'bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-300',
+  closed: 'bg-neutral-200 text-neutral-600 dark:bg-white/10 dark:text-neutral-400',
 }
 
 export function StatusBadge({ status }: { status: TaskStatus }) {
@@ -23,10 +23,10 @@ export function StatusBadge({ status }: { status: TaskStatus }) {
 }
 
 const PRIORITY_STYLE: Record<TaskPriority, string> = {
-  urgent: 'text-red-700',
-  high: 'text-orange-600',
-  normal: 'text-neutral-500',
-  low: 'text-neutral-400',
+  urgent: 'text-red-700 dark:text-red-400',
+  high: 'text-orange-600 dark:text-orange-400',
+  normal: 'text-neutral-500 dark:text-neutral-400',
+  low: 'text-neutral-400 dark:text-neutral-500',
 }
 
 export function PriorityLabel({ priority }: { priority: TaskPriority }) {
@@ -35,7 +35,7 @@ export function PriorityLabel({ priority }: { priority: TaskPriority }) {
 
 export function Card({ children, className = '', id }: { children: React.ReactNode; className?: string; id?: string }) {
   return (
-    <section id={id} className={`scroll-mt-20 rounded-xl border border-neutral-200/80 bg-white p-4 shadow-sm shadow-neutral-900/[0.04] ${className}`}>
+    <section id={id} className={`scroll-mt-20 rounded-xl border border-neutral-200/80 bg-white p-4 shadow-sm shadow-neutral-900/[0.04] dark:border-white/10 dark:bg-[#101C2C] dark:shadow-black/20 ${className}`}>
       {children}
     </section>
   )
@@ -44,23 +44,23 @@ export function Card({ children, className = '', id }: { children: React.ReactNo
 export function PageTitle({ children, sub }: { children: React.ReactNode; sub?: string }) {
   return (
     <div className="mb-5">
-      <h1 className="text-2xl font-bold text-[#0D1F35]">{children}</h1>
-      {sub && <p className="mt-1 text-sm text-neutral-500">{sub}</p>}
+      <h1 className="text-2xl font-bold text-[#0D1F35] dark:text-white">{children}</h1>
+      {sub && <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{sub}</p>}
     </div>
   )
 }
 
 export const inputClass =
-  'mt-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm outline-none transition-colors duration-150 hover:border-neutral-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/40'
+  'mt-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 outline-none transition-colors duration-150 hover:border-neutral-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/40 dark:border-white/15 dark:bg-[#0B1420] dark:text-neutral-100 dark:hover:border-white/25'
 export const buttonClass =
   'rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-[#0D1F35] shadow-sm shadow-amber-900/10 transition-all duration-150 hover:bg-amber-400 hover:shadow active:scale-[0.97] disabled:opacity-60 disabled:active:scale-100'
 export const secondaryButtonClass =
-  'rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 transition-all duration-150 hover:border-neutral-400 hover:bg-neutral-50 active:scale-[0.97] disabled:opacity-60 disabled:active:scale-100'
+  'rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 transition-all duration-150 hover:border-neutral-400 hover:bg-neutral-50 active:scale-[0.97] disabled:opacity-60 disabled:active:scale-100 dark:border-white/15 dark:bg-white/5 dark:text-neutral-200 dark:hover:border-white/25 dark:hover:bg-white/10'
 
 export function SectionTitle({ children, icon: Icon }: { children: React.ReactNode; icon?: LucideIcon }) {
   return (
-    <h2 className="mb-2 flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wide text-neutral-500">
-      {Icon && <Icon size={14} aria-hidden className="text-amber-600" />}
+    <h2 className="mb-2 flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+      {Icon && <Icon size={14} aria-hidden className="text-amber-600 dark:text-amber-400" />}
       {children}
     </h2>
   )
@@ -77,12 +77,12 @@ export function EmptyState({
   return (
     <div className="flex flex-col items-center gap-2 px-4 py-8 text-center">
       {Icon && (
-        <span className="mb-1 flex h-11 w-11 items-center justify-center rounded-full bg-amber-50 text-amber-600">
+        <span className="mb-1 flex h-11 w-11 items-center justify-center rounded-full bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400">
           <Icon size={20} aria-hidden />
         </span>
       )}
-      <p className="text-sm font-medium text-neutral-700">{label}</p>
-      {hint && <p className="max-w-sm text-sm text-neutral-500">{hint}</p>}
+      <p className="text-sm font-medium text-neutral-700 dark:text-neutral-200">{label}</p>
+      {hint && <p className="max-w-sm text-sm text-neutral-500 dark:text-neutral-400">{hint}</p>}
       {action && <div className="mt-1">{action}</div>}
     </div>
   )
@@ -93,19 +93,19 @@ export function StatTile({
   icon: Icon, label, value, tone = 'neutral', href,
 }: { icon?: LucideIcon; label: string; value: React.ReactNode; tone?: 'neutral' | 'red' | 'orange' | 'amber' | 'green' | 'blue'; href?: string }) {
   const TONE: Record<string, string> = {
-    neutral: 'text-neutral-700 bg-neutral-100',
-    red: 'text-red-700 bg-red-50',
-    orange: 'text-orange-700 bg-orange-50',
-    amber: 'text-amber-700 bg-amber-50',
-    green: 'text-green-700 bg-green-50',
-    blue: 'text-blue-700 bg-blue-50',
+    neutral: 'text-neutral-700 bg-neutral-100 dark:text-neutral-300 dark:bg-white/10',
+    red: 'text-red-700 bg-red-50 dark:text-red-300 dark:bg-red-500/10',
+    orange: 'text-orange-700 bg-orange-50 dark:text-orange-300 dark:bg-orange-500/10',
+    amber: 'text-amber-700 bg-amber-50 dark:text-amber-300 dark:bg-amber-500/10',
+    green: 'text-green-700 bg-green-50 dark:text-green-300 dark:bg-green-500/10',
+    blue: 'text-blue-700 bg-blue-50 dark:text-blue-300 dark:bg-blue-500/10',
   }
   const body = (
     <Card className={`flex items-center gap-3 ${href ? 'transition-transform duration-150 hover:-translate-y-0.5 hover:shadow-md' : ''}`}>
       {Icon && <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${TONE[tone]}`}><Icon size={18} aria-hidden /></span>}
       <span className="min-w-0">
-        <span className="block text-2xl font-bold leading-none text-[#0D1F35]">{value}</span>
-        <span className="block truncate text-xs text-neutral-500">{label}</span>
+        <span className="block text-2xl font-bold leading-none text-[#0D1F35] dark:text-white">{value}</span>
+        <span className="block truncate text-xs text-neutral-500 dark:text-neutral-400">{label}</span>
       </span>
     </Card>
   )
@@ -120,17 +120,17 @@ export function ProgressRing({ value, size = 56, label }: { value: number; size?
   return (
     <div className="flex flex-col items-center gap-1" role="img" aria-label={`${pct}% ${label ?? 'complete'}`}>
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90">
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="currentColor" strokeWidth={6} className="text-neutral-200" />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="currentColor" strokeWidth={6} className="text-neutral-200 dark:text-white/10" />
         <circle
           cx={size / 2} cy={size / 2} r={r} fill="none" stroke="currentColor" strokeWidth={6} strokeLinecap="round"
           className="text-amber-500 transition-[stroke-dashoffset] duration-700 ease-out"
           strokeDasharray={c} strokeDashoffset={c - (c * pct) / 100}
         />
-        <text x={size / 2} y={size / 2} dy=".08em" textAnchor="middle" className="rotate-90 fill-[#0D1F35] text-[13px] font-bold" style={{ transformOrigin: 'center', transformBox: 'fill-box' }}>
+        <text x={size / 2} y={size / 2} dy=".08em" textAnchor="middle" className="rotate-90 fill-[#0D1F35] text-[13px] font-bold dark:fill-white" style={{ transformOrigin: 'center', transformBox: 'fill-box' }}>
           {pct}%
         </text>
       </svg>
-      {label && <span className="text-[11px] text-neutral-500">{label}</span>}
+      {label && <span className="text-[11px] text-neutral-500 dark:text-neutral-400">{label}</span>}
     </div>
   )
 }
