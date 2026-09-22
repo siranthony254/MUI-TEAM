@@ -162,7 +162,9 @@ async function main() {
     noErr(await E.client.from('messages').insert({ channel_id: exe, author_id: E.id, body: `${P} secret`, mentions: [D.id] }))
     ok((await notes(D, 'mention')).length === 0, 'D was notified about a private channel')
     ok((noErr(await M.client.from('messages').select('id').eq('channel_id', exe))).length === 0, 'member reads executive channel')
-    isErr(await E.client.from('messages').update({ body: 'edited' }).eq('channel_id', gen), 'message edit allowed')
+    // migration 12: authors may edit their own messages now, so this touches only E's own row (RLS still
+    // filters everything else in that channel out of the update).
+    noErr(await E.client.from('messages').update({ body: 'edited' }).eq('channel_id', gen).eq('author_id', E.id))
   })
 
   let meeting
@@ -510,6 +512,9 @@ async function main() {
 
     await t('chat push: a message notifies others in the channel; muting a chat stops it', async () => {
       noErr(await E2.client.from('channel_reads').upsert({ channel_id: general, member_id: E2.id, muted: true }, { onConflict: 'channel_id,member_id' }))
+      // D already has an unread 'chat' notification for this channel from an earlier test in this run;
+      // the 2-minute same-channel suppression is intentional (no pile-up), so clear it first to test cleanly.
+      await svc.from('notifications').update({ read_at: new Date().toISOString() }).eq('recipient_id', D.id).eq('kind', 'chat')
       const m2 = noErr(await M.client.from('messages').insert({ channel_id: general, author_id: M.id, body: `${P} broadcast` }).select('id').single()).id
       const got = async (u) => ((await svc.from('notifications').select('id').eq('recipient_id', u.id).eq('kind', 'chat').like('dedupe_key', `chat:${m2}:%`)).data ?? []).length
       ok((await got(D)) === 1, 'unmuted colleague got no chat notification')
