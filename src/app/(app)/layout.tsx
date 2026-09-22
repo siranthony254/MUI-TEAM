@@ -12,6 +12,7 @@ import { signOut } from '@/app/login/actions'
 import { ROLE_LABEL } from '@/lib/types'
 import { Nav } from '@/components/Nav'
 import { GuestGate } from '@/components/GuestGate'
+import { PageTransition } from '@/components/PageTransition'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const me = await requireMember()
@@ -40,11 +41,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   ]
 
   return (
-    <div className="flex min-h-screen bg-neutral-50 text-neutral-900">
+    <div className="flex min-h-screen bg-[#F8F6F2] text-neutral-900">
       <Nav role={me.role} isDirector={me.is_director} showAnalytics={caps.view_analytics} showAdmin={scopes.size > 0} unread={unreadCount} chatUnread={chatUnread} orgName={shell.settings.org_name || 'MUI Team'} />
       <LiveSync memberId={me.id} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center justify-between gap-3 border-b border-neutral-200 bg-white px-4 py-3">
+        <header className="flex items-center justify-between gap-3 border-b border-neutral-200/70 bg-white/85 px-4 py-3 backdrop-blur supports-[backdrop-filter]:sticky supports-[backdrop-filter]:top-0 supports-[backdrop-filter]:z-10">
           <div className="flex min-w-0 items-center gap-3">
             <Avatar name={me.full_name} url={me.avatar_url} size={36} />
             <div className="min-w-0">
@@ -62,7 +63,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </div>
         </header>
         <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 pb-24 md:pb-8">
-          {me.role === 'guest' ? <GuestGate>{children}</GuestGate> : children}
+          <PageTransition>{me.role === 'guest' ? <GuestGate>{children}</GuestGate> : children}</PageTransition>
         </main>
       </div>
     </div>

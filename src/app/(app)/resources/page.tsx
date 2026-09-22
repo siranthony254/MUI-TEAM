@@ -1,11 +1,11 @@
 import Link from 'next/link'
-import { ExternalLink, FileText } from 'lucide-react'
+import { ExternalLink, FileText, SearchX, FolderOpen } from 'lucide-react'
 import { requireMember } from '@/lib/auth'
 import { can } from '@/lib/permissions'
 import { createClient } from '@/lib/supabase/server'
 import { fmtDay } from '@/lib/time'
 import { RESOURCE_CATEGORIES, type Resource } from '@/lib/types'
-import { Card, PageTitle } from '@/components/ui'
+import { Card, PageTitle, EmptyState} from '@/components/ui'
 import { AddLinkForm, UploadFileForm } from './UploadForms'
 import { deleteResource } from './actions'
 
@@ -54,7 +54,7 @@ export default async function Resources({
       </div>
 
       {items.length === 0 ? (
-        <Card><p className="text-sm text-neutral-600">{q || category ? 'Nothing matches.' : 'No resources yet.'}</p></Card>
+        <Card><EmptyState icon={q || category ? SearchX : FolderOpen} label={q || category ? 'Nothing matches.' : 'No resources yet.'} /></Card>
       ) : (
         <div className="space-y-2">
           {items.map((r) => (

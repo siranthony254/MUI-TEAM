@@ -1,9 +1,10 @@
 import Link from 'next/link'
+import { FolderKanban } from 'lucide-react'
 import { requireMember } from '@/lib/auth'
 import { can } from '@/lib/permissions'
 import { createClient } from '@/lib/supabase/server'
 import type { Project } from '@/lib/types'
-import { Card, PageTitle, buttonClass, inputClass } from '@/components/ui'
+import { Card, PageTitle, buttonClass, inputClass, EmptyState} from '@/components/ui'
 import { createProject } from './actions'
 
 export const dynamic = 'force-dynamic'
@@ -32,7 +33,7 @@ export default async function Projects() {
       <PageTitle sub="Progress is weighted: bigger pieces of work count for more.">Projects</PageTitle>
 
       {(projects ?? []).length === 0 ? (
-        <Card><p className="text-sm text-neutral-600">No projects yet.</p></Card>
+        <Card><EmptyState icon={FolderKanban} label="No projects yet." hint="Group related tasks and files under a project to track them together." /></Card>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
           {(projects as Project[]).map((p) => {

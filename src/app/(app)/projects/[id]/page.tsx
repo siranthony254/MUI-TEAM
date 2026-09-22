@@ -6,7 +6,8 @@ import { createClient } from '@/lib/supabase/server'
 import { fmtDay, fmtDateTime, dayKey } from '@/lib/time'
 import { fmtDue, isOverdue } from '@/lib/tasks'
 import type { ActivityEntry, Meeting, Project, Resource, Task, TeamMember } from '@/lib/types'
-import { Card, PageTitle, PriorityLabel, SectionTitle, StatusBadge } from '@/components/ui'
+import { Card, EmptyState, PageTitle, PriorityLabel, SectionTitle, StatusBadge } from '@/components/ui'
+import { Activity, CalendarDays, FileText, MessageSquare, Users, UserPlus } from 'lucide-react'
 import { AddLinkForm, UploadFileForm } from '../../resources/UploadForms'
 import { addProjectMember, removeProjectMember } from '../actions'
 import { ProjectEditForm } from './ProjectEditForm'
@@ -125,7 +126,7 @@ export default async function ProjectPage({
 
       {tab === 'team' && (
         <>
-          {teamIds.length === 0 ? <Card><p className="text-sm text-neutral-600">No one on this project yet.</p></Card> : (
+          {teamIds.length === 0 ? <Card><EmptyState icon={Users} label="No one on this project yet." /></Card> : (
             <div className="grid gap-3 sm:grid-cols-2">
               {teamIds.map((mid) => {
                 const m = members.find((x) => x.id === mid)
@@ -160,7 +161,7 @@ export default async function ProjectPage({
           )}
           {exec && (
             <Card className="mt-4">
-              <SectionTitle>Add a member</SectionTitle>
+              <SectionTitle icon={UserPlus}>Add a member</SectionTitle>
               <form action={addProjectMember} className="flex gap-2">
                 <input type="hidden" name="project_id" value={id} />
                 <select name="member_id" required defaultValue="" className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm">
@@ -185,7 +186,7 @@ export default async function ProjectPage({
               <p className="mb-3 text-sm text-neutral-600">Every project has its own chat channel, open to its director, members and anyone with a task in it.</p>
               <Link href={`/chat/${channel.id}`} className="inline-block rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-[#0D1F35] hover:bg-amber-400">Open #{project.name}</Link>
             </>
-          ) : <p className="text-sm text-neutral-600">No channel for this project yet.</p>}
+          ) : <EmptyState icon={MessageSquare} label="No channel for this project yet." />}
         </Card>
       )}
 
@@ -261,7 +262,7 @@ async function CalendarTab({ project }: { project: Project }) {
     ...(project.due_date ? [{ at: `${project.due_date}T12:00:00+03:00`, title: `${project.name} due`, href: `/projects/${project.id}`, kind: 'Milestone' }] : []),
   ].sort((a, b) => a.at.localeCompare(b.at))
 
-  if (rows.length === 0) return <Card><p className="text-sm text-neutral-600">Nothing scheduled for this project.</p></Card>
+  if (rows.length === 0) return <Card><EmptyState icon={CalendarDays} label="Nothing scheduled for this project." /></Card>
   return (
     <div className="space-y-2">
       {rows.map((r, i) => (
@@ -283,7 +284,7 @@ async function FilesTab({ projectId, exec, meId }: { projectId: string; exec: bo
   const items = (data ?? []) as Resource[]
   return (
     <>
-      {items.length === 0 ? <Card><p className="text-sm text-neutral-600">No files for this project yet.</p></Card> : (
+      {items.length === 0 ? <Card><EmptyState icon={FileText} label="No files for this project yet." /></Card> : (
         <div className="space-y-2">
           {items.map((r) => (
             <Card key={r.id}>
@@ -308,7 +309,7 @@ async function ActivityTab({ projectId, members }: { projectId: string; members:
   const supabase = await createClient()
   const { data } = await supabase.from('activity_log').select('*').eq('project_id', projectId).order('created_at', { ascending: false }).limit(100)
   const rows = (data ?? []) as ActivityEntry[]
-  if (rows.length === 0) return <Card><p className="text-sm text-neutral-600">No activity recorded yet.</p></Card>
+  if (rows.length === 0) return <Card><EmptyState icon={Activity} label="No activity recorded yet." /></Card>
   return (
     <Card>
       <ul className="space-y-2 text-sm">

@@ -1,11 +1,11 @@
 import Link from 'next/link'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react'
 import { requireMember, isExecOrAbove } from '@/lib/auth'
 import { can } from '@/lib/permissions'
 import { createClient } from '@/lib/supabase/server'
 import { dayKey, fmtDay, monthParam, parseMonthParam, shiftMonth, TZ } from '@/lib/time'
 import type { CalendarEvent, Episode, Meeting, Project, Task } from '@/lib/types'
-import { Card, PageTitle } from '@/components/ui'
+import { Card, PageTitle, EmptyState} from '@/components/ui'
 import { EventForm } from './EventForm'
 import { deleteEvent } from './actions'
 
@@ -149,7 +149,7 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
 
       {/* Agenda list (all screens; the primary view on phones) */}
       <h2 className="mt-6 mb-2 text-sm font-semibold uppercase tracking-wide text-neutral-500">Agenda</h2>
-      {items.length === 0 ? <Card><p className="text-sm text-neutral-600">Nothing scheduled this month.</p></Card> : (
+      {items.length === 0 ? <Card><EmptyState icon={CalendarDays} label="Nothing scheduled this month." /></Card> : (
         <div className="space-y-4">
           {[...byDay.entries()].map(([day, list]) => (
             <div key={day}>

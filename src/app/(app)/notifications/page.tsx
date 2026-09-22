@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { Bell, CheckCircle2 } from 'lucide-react'
 import { revalidatePath } from 'next/cache'
 import { requireMember } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
@@ -6,7 +7,7 @@ import { fmtDateTime } from '@/lib/time'
 import { CATEGORIES, groupOfKind, kindsOfCategory } from '@/lib/notify/groups'
 import { myMutedKinds } from '@/lib/notify/muted'
 import type { AppNotification } from '@/lib/types'
-import { Card, PageTitle } from '@/components/ui'
+import { Card, PageTitle, EmptyState} from '@/components/ui'
 
 export const dynamic = 'force-dynamic'
 
@@ -71,7 +72,7 @@ export default async function Notifications({ searchParams }: { searchParams: Pr
       )}
 
       {items.length === 0 ? (
-        <Card><p className="text-sm text-neutral-600">{active ? 'Nothing in this category.' : 'You’re all caught up.'}</p></Card>
+        <Card><EmptyState icon={active ? Bell : CheckCircle2} label={active ? 'Nothing in this category.' : 'You’re all caught up.'} /></Card>
       ) : (
         <div className="space-y-2">
           {items.map((n) => {

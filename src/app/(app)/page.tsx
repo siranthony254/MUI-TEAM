@@ -1,10 +1,11 @@
 import Link from 'next/link'
+import { CheckCircle2 } from 'lucide-react'
 import { requireMember, isExecOrAbove } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { isDueToday, isOverdue, fmtDue, PRIORITY_ORDER } from '@/lib/tasks'
 import type { Task } from '@/lib/types'
 import { fmtDateTime, nairobiHour } from '@/lib/time'
-import { Card, PageTitle, StatusBadge } from '@/components/ui'
+import { Card, PageTitle, StatusBadge, EmptyState} from '@/components/ui'
 import { markOnboardingDone } from './home-actions'
 import { InstallBanner } from '@/components/pwa/InstallApp'
 
@@ -163,7 +164,7 @@ export default async function Dashboard() {
 
       <h2 className="mt-8 mb-3 text-sm font-semibold uppercase tracking-wide text-neutral-500">Needs your attention</h2>
       {focus.length === 0 ? (
-        <Card><p className="text-sm text-neutral-600">Nothing overdue or due today. </p></Card>
+        <Card><EmptyState icon={CheckCircle2} label="Nothing overdue or due today." hint="You're clear — nice work." /></Card>
       ) : (
         <div className="space-y-2">
           {focus.map((t) => (

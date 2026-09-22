@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { Activity, Target, ShieldCheck, ListChecks, PackageCheck, TrendingUp, FolderKanban, Mail } from 'lucide-react'
 import { notFound } from 'next/navigation'
 import { requireMember } from '@/lib/auth'
 import { hasScope } from '@/lib/permissions'
@@ -6,7 +7,7 @@ import { createClient } from '@/lib/supabase/server'
 import { isOverdue } from '@/lib/tasks'
 import { fmtDateTime } from '@/lib/time'
 import { ROLE_LABEL, type ActivityEntry, type Task, type TeamMember } from '@/lib/types'
-import { Card, PageTitle, SectionTitle } from '@/components/ui'
+import { Card, PageTitle, SectionTitle, EmptyState} from '@/components/ui'
 import { Avatar } from '@/components/Avatar'
 import { startDm } from '../../chat/actions'
 
@@ -69,23 +70,23 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
 
       <div className="mt-4 grid gap-4 md:grid-cols-2">
         <Card>
-          <SectionTitle>Mandate</SectionTitle>
+          <SectionTitle icon={Target}>Mandate</SectionTitle>
           <p className="text-sm">{person.mandate ?? <span className="text-neutral-500">Not set yet.</span>}</p>
           <div className="mt-4" />
-          <SectionTitle>Authority</SectionTitle>
+          <SectionTitle icon={ShieldCheck}>Authority</SectionTitle>
           <p className="text-sm">{person.authority ?? <span className="text-neutral-500">Not set yet.</span>}</p>
           {manager && <><div className="mt-4" /><SectionTitle>Reports to</SectionTitle><p className="text-sm"><Link href={`/people/${manager.id}`} className="hover:underline">{manager.full_name}</Link></p></>}
         </Card>
         <Card>
-          <SectionTitle>Responsibilities</SectionTitle>
+          <SectionTitle icon={ListChecks}>Responsibilities</SectionTitle>
           <List items={person.responsibilities} />
           <div className="mt-4" />
-          <SectionTitle>Deliverables</SectionTitle>
+          <SectionTitle icon={PackageCheck}>Deliverables</SectionTitle>
           <List items={person.deliverables} />
           {(person.success_measures ?? []).length > 0 && (
             <>
               <div className="mt-4" />
-              <SectionTitle>How success is measured</SectionTitle>
+              <SectionTitle icon={TrendingUp}>How success is measured</SectionTitle>
               <List items={person.success_measures} />
             </>
           )}
@@ -93,7 +94,7 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
       </div>
 
       <Card className="mt-4">
-        <SectionTitle>Projects</SectionTitle>
+        <SectionTitle icon={FolderKanban}>Projects</SectionTitle>
         {(projects ?? []).length === 0 ? <p className="text-sm text-neutral-500">Not on any project you can see.</p> : (
           <ul className="flex flex-wrap gap-2">
             {(projects ?? []).map((p) => (
@@ -104,8 +105,8 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
       </Card>
 
       <Card className="mt-4">
-        <SectionTitle>Recent activity</SectionTitle>
-        {(activityData ?? []).length === 0 ? <p className="text-sm text-neutral-500">Nothing you can see yet.</p> : (
+        <SectionTitle icon={Activity}>Recent activity</SectionTitle>
+        {(activityData ?? []).length === 0 ? <EmptyState icon={Activity} label="Nothing you can see yet." /> : (
           <ul className="space-y-1 text-sm">
             {((activityData ?? []) as ActivityEntry[]).map((a) => (
               <li key={a.id}>{a.summary}<span className="ml-1 text-xs text-neutral-400">· {fmtDateTime(a.created_at)}</span></li>
@@ -123,7 +124,7 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
       )}
 
       <Card className="mt-4">
-        <SectionTitle>Contact</SectionTitle>
+        <SectionTitle icon={Mail}>Contact</SectionTitle>
         <p className="text-sm"><a className="text-amber-700 hover:underline" href={`mailto:${person.email}`}>{person.email}</a></p>
         {person.phone && <p className="text-sm"><a className="text-amber-700 hover:underline" href={`tel:${person.phone}`}>{person.phone}</a></p>}
       </Card>

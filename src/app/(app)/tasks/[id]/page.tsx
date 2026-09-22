@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowRight, Repeat } from 'lucide-react'
+import { ArrowRight, Repeat, MessageSquare, Zap, Paperclip, Clock, Activity } from 'lucide-react'
 import { notFound } from 'next/navigation'
 import { requireMember, isExecOrAbove } from '@/lib/auth'
 import { can } from '@/lib/permissions'
@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/server'
 import { allowedTransitions, fmtDue, isOverdue } from '@/lib/tasks'
 import { fmtDay, fmtDateTime } from '@/lib/time'
 import type { ActivityEntry, ExtensionRequest, Task, TaskComment } from '@/lib/types'
-import { Card, PageTitle, PriorityLabel, SectionTitle, StatusBadge } from '@/components/ui'
+import { Card, PageTitle, PriorityLabel, SectionTitle, StatusBadge, EmptyState} from '@/components/ui'
 import { AttachmentsPanel } from '@/components/attachments/AttachmentsPanel'
 import { StatusControls } from './StatusControls'
 import { HandOnForm } from '../HandOnForm'
@@ -136,19 +136,19 @@ export default async function TaskPage({
 
       {transitions.length > 0 && (
         <Card className="mt-4">
-          <SectionTitle>Actions</SectionTitle>
+          <SectionTitle icon={Zap}>Actions</SectionTitle>
           <StatusControls id={task.id} transitions={transitions} />
         </Card>
       )}
 
       <Card className="mt-4">
-        <SectionTitle>Attachments</SectionTitle>
+        <SectionTitle icon={Paperclip}>Attachments</SectionTitle>
         <AttachmentsPanel type="task" entityId={task.id} canAdd={canAttach} viewerId={me.id} isSuperAdmin={me.role === 'super_admin'} />
       </Card>
 
       <Card className="mt-4">
-        <SectionTitle>Comments ({comments.length})</SectionTitle>
-        {comments.length === 0 ? <p className="text-sm text-neutral-500">No comments yet.</p> : (
+        <SectionTitle icon={MessageSquare}>Comments ({comments.length})</SectionTitle>
+        {comments.length === 0 ? <EmptyState icon={MessageSquare} label="No comments yet." /> : (
           <ul className="space-y-3">
             {comments.map((c) => (
               <li key={c.id} className="text-sm">
@@ -166,7 +166,7 @@ export default async function TaskPage({
 
       {(pendingExt || extensions.length > 0 || canRequestExt) && (
         <Card className="mt-4">
-          <SectionTitle>Deadline extension</SectionTitle>
+          <SectionTitle icon={Clock}>Deadline extension</SectionTitle>
           {pendingExt && (
             <div className="rounded-lg bg-amber-50 p-3 text-sm text-amber-950">
               <p><strong>{nameOf(pendingExt.requested_by)}</strong> asked to move the deadline to <strong>{fmtDateTime(pendingExt.requested_due)}</strong>.</p>
@@ -211,7 +211,7 @@ export default async function TaskPage({
 
       {(activity ?? []).length > 0 && (
         <Card className="mt-4">
-          <SectionTitle>Activity</SectionTitle>
+          <SectionTitle icon={Activity}>Activity</SectionTitle>
           <ul className="space-y-2 text-sm text-neutral-700">
             {((activity ?? []) as ActivityEntry[]).map((a) => (
               <li key={a.id}>

@@ -1,9 +1,10 @@
 import Link from 'next/link'
+import { Megaphone } from 'lucide-react'
 import { requireCap } from '@/lib/permissions'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { fmtDateTime } from '@/lib/time'
 import type { Campaign } from '@/lib/types'
-import { Card, PageTitle, SectionTitle } from '@/components/ui'
+import { Card, PageTitle, SectionTitle, EmptyState} from '@/components/ui'
 import { ServiceKeyNotice } from '@/components/ServiceKeyNotice'
 import { CampaignForm } from './CampaignForm'
 
@@ -35,7 +36,7 @@ export default async function Campaigns() {
 
       <div className="mt-8" />
       <SectionTitle>Sent</SectionTitle>
-      {(sent ?? []).length === 0 ? <Card><p className="text-sm text-neutral-600">Nothing sent yet.</p></Card> : (
+      {(sent ?? []).length === 0 ? <Card><EmptyState icon={Megaphone} label="Nothing sent yet." hint="Campaigns you send appear here." /></Card> : (
         <div className="space-y-2">
           {((sent ?? []) as Campaign[]).map((c) => (
             <Card key={c.id}>

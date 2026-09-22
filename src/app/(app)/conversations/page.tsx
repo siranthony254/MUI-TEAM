@@ -1,10 +1,11 @@
 import Link from 'next/link'
+import { Radio } from 'lucide-react'
 import { requireMember, isExecOrAbove } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { fmtDateTime, fmtDay } from '@/lib/time'
 import type { Episode, EpisodeTemplateItem, Task } from '@/lib/types'
 import { EPISODE_STAGE_LABEL, EPISODE_STAGES } from '@/lib/types'
-import { Card, PageTitle, SectionTitle, buttonClass, inputClass } from '@/components/ui'
+import { Card, PageTitle, SectionTitle, buttonClass, inputClass, EmptyState} from '@/components/ui'
 import { NewEpisodeForm } from './EpisodeForms'
 import { addTemplateItem, removeTemplateItem } from './actions'
 
@@ -52,7 +53,7 @@ export default async function Conversations({ searchParams }: { searchParams: Pr
         ))}
       </div>
 
-      {episodes.length === 0 ? <Card><p className="text-sm text-neutral-600">No episodes here yet.</p></Card> : (
+      {episodes.length === 0 ? <Card><EmptyState icon={Radio} label="No episodes here yet." hint="Start one to track it from idea to publish." /></Card> : (
         <div className="grid gap-3 sm:grid-cols-2">
           {episodes.map((e) => {
             const pct = progress(e.id)

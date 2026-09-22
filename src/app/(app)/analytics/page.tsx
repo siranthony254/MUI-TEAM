@@ -1,10 +1,11 @@
 import Link from 'next/link'
+import { CheckCircle2, Building2 } from 'lucide-react'
 import { requireCap } from '@/lib/permissions'
 import { createClient } from '@/lib/supabase/server'
 import { computeAnalytics, reportingLine } from '@/lib/analytics'
 import { fmtDay, monthRange } from '@/lib/time'
 import type { Project, Task, TeamMember } from '@/lib/types'
-import { Card, PageTitle, SectionTitle } from '@/components/ui'
+import { Card, PageTitle, SectionTitle, EmptyState} from '@/components/ui'
 
 export const dynamic = 'force-dynamic'
 
@@ -86,7 +87,7 @@ export default async function Analytics() {
 
       <h2 className="mt-8 mb-2 text-sm font-semibold uppercase tracking-wide text-neutral-500">Attention required</h2>
       {attention === 0 ? (
-        <Card><p className="text-sm text-green-700">Nothing needs attention right now.</p></Card>
+        <Card><EmptyState icon={CheckCircle2} label="Nothing needs attention right now." /></Card>
       ) : (
         <Card className="space-y-4">
           {overdueTasks.length > 0 && (
@@ -124,7 +125,7 @@ export default async function Analytics() {
       )}
 
       <h2 className="mt-8 mb-2 text-sm font-semibold uppercase tracking-wide text-neutral-500">Departments</h2>
-      {a.depts.length === 0 ? <Card><p className="text-sm text-neutral-600">No departments assigned yet.</p></Card> : (
+      {a.depts.length === 0 ? <Card><EmptyState icon={Building2} label="No departments assigned yet." /></Card> : (
         <div className="grid gap-3 sm:grid-cols-2">
           {a.depts.map((d) => (
             <Card key={d.id ?? 'none'}>

@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ExternalLink, FileText } from 'lucide-react'
+import { ExternalLink, FileText, Share2, RefreshCw, History } from 'lucide-react'
 import { requireMember } from '@/lib/auth'
 import { can } from '@/lib/permissions'
 import { createClient } from '@/lib/supabase/server'
@@ -78,19 +78,19 @@ export default async function ResourcePage({ params }: { params: Promise<{ id: s
       )}
 
       <Card className="mt-4">
-        <SectionTitle>Share with colleagues</SectionTitle>
+        <SectionTitle icon={Share2}>Share with colleagues</SectionTitle>
         <ShareForm resourceId={r.id} people={(people ?? []).map((p) => ({ id: p.id, label: p.full_name }))} />
       </Card>
 
       {canReplace && (
         <Card className="mt-4">
-          <SectionTitle>{isLink ? 'Change the link' : 'Replace with a new version'}</SectionTitle>
+          <SectionTitle icon={RefreshCw}>{isLink ? 'Change the link' : 'Replace with a new version'}</SectionTitle>
           {isLink ? <ReplaceLinkForm resourceId={r.id} current={r.url ?? ''} /> : <ReplaceFileForm resourceId={r.id} />}
         </Card>
       )}
 
       <Card className="mt-4">
-        <SectionTitle>Version history</SectionTitle>
+        <SectionTitle icon={History}>Version history</SectionTitle>
         <ul className="divide-y divide-neutral-100 text-sm">
           <li className="flex items-center justify-between gap-3 py-2">
             <span><strong>Version {r.version}</strong> <span className="text-xs text-neutral-500">current · {nameOf(r.uploaded_by)}</span></span>

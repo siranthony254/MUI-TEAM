@@ -1,10 +1,11 @@
 import Link from 'next/link'
+import { Scale } from 'lucide-react'
 import { requireMember } from '@/lib/auth'
 import { can } from '@/lib/permissions'
 import { createClient } from '@/lib/supabase/server'
 import { fmtDay } from '@/lib/time'
 import type { Decision } from '@/lib/types'
-import { Card, PageTitle } from '@/components/ui'
+import { Card, PageTitle, EmptyState} from '@/components/ui'
 import { AttachmentsPanel } from '@/components/attachments/AttachmentsPanel'
 import { NewDecisionForm } from './DecisionForm'
 import { setDecisionStatus } from './actions'
@@ -62,7 +63,7 @@ export default async function Decisions({ searchParams }: { searchParams: Promis
         ))}
       </div>
 
-      {shown.length === 0 ? <Card><p className="text-sm text-neutral-600">Nothing here yet.</p></Card> : (
+      {shown.length === 0 ? <Card><EmptyState icon={Scale} label="Nothing here yet." hint="Decisions the team records will show up here, numbered and searchable." /></Card> : (
         <div className="space-y-3">
           {shown.map((d) => (
             <Card key={d.id}>

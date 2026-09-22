@@ -1,8 +1,9 @@
 import Link from 'next/link'
+import { ListChecks } from 'lucide-react'
 import { requireScope } from '@/lib/permissions'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { OnboardingItem } from '@/lib/types'
-import { Card, PageTitle, SectionTitle } from '@/components/ui'
+import { Card, PageTitle, SectionTitle, EmptyState} from '@/components/ui'
 import { ServiceKeyNotice } from '@/components/ServiceKeyNotice'
 import { AddStepForm, WelcomeForm } from './OnboardingForms'
 import { removeOnboardingItem } from './actions'
@@ -37,7 +38,7 @@ export default async function OnboardingAdmin() {
 
       <Card className="mt-4">
         <SectionTitle>Checklist ({(items.data ?? []).length} steps)</SectionTitle>
-        {(items.data ?? []).length === 0 ? <p className="text-sm text-neutral-500">No steps yet.</p> : (
+        {(items.data ?? []).length === 0 ? <EmptyState icon={ListChecks} label="No steps yet." hint="Add the first thing a new member should do." /> : (
           <ul className="divide-y divide-neutral-100">
             {((items.data ?? []) as OnboardingItem[]).map((i) => (
               <li key={i.id} className="flex items-start justify-between gap-3 py-2 text-sm">

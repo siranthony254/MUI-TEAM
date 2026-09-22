@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { KeyRound, Trash2 } from 'lucide-react'
 import { notFound } from 'next/navigation'
 import { canDelegate } from '@/lib/grants'
 import { getMatrix, requireScope } from '@/lib/permissions'
@@ -57,7 +58,7 @@ export default async function EditMember({ params }: { params: Promise<{ id: str
         const until = live.map((g) => g.expires_at).filter(Boolean).sort()[0]
         return (
           <Card className="mt-4">
-            <SectionTitle>Access &amp; delegation</SectionTitle>
+            <SectionTitle icon={KeyRound}>Access &amp; delegation</SectionTitle>
             <p className="mb-3 text-xs text-neutral-500">
               Level: {level === 'executive' ? 'Executive' : member.role === 'guest' ? 'Guest (no extra access applies)' : 'Team member'}.
               Choose what to add or take away on top of that, and any part of system administration to delegate.
@@ -78,7 +79,7 @@ export default async function EditMember({ params }: { params: Promise<{ id: str
 
       {id !== me.id && (
         <Card className="mt-4">
-          <SectionTitle>Access</SectionTitle>
+          <SectionTitle icon={KeyRound}>Access</SectionTitle>
           <AccessPanel
             memberId={member.id}
             active={member.active}
@@ -90,7 +91,7 @@ export default async function EditMember({ params }: { params: Promise<{ id: str
 
       {me.role === 'super_admin' && id !== me.id && !member.is_director && (
         <Card className="mt-4 border-red-200">
-          <SectionTitle>Delete user</SectionTitle>
+          <SectionTitle icon={Trash2}>Delete user</SectionTitle>
           <DeleteMemberForm
             member={{ id: member.id, full_name: member.full_name }}
             heirs={(others ?? []).map((p) => ({ id: p.id, label: p.full_name }))}

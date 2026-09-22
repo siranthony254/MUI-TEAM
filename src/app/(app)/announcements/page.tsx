@@ -1,8 +1,9 @@
 import { requireMember } from '@/lib/auth'
+import { Megaphone } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { fmtDateTime } from '@/lib/time'
 import type { Announcement } from '@/lib/types'
-import { Card, PageTitle } from '@/components/ui'
+import { Card, PageTitle, EmptyState} from '@/components/ui'
 import { AnnouncementForm } from './AnnouncementForm'
 import { deleteAnnouncement } from './actions'
 import { AnnouncementEditForm } from '../ManageForms'
@@ -33,7 +34,7 @@ export default async function Announcements() {
     <>
       <PageTitle sub="Official communication from the Executive Director.">Announcements</PageTitle>
 
-      {list.length === 0 ? <Card><p className="text-sm text-neutral-600">No announcements yet.</p></Card> : (
+      {list.length === 0 ? <Card><EmptyState icon={Megaphone} label="No announcements yet." hint="Official word from the Executive Director will show up here." /></Card> : (
         <div className="space-y-3">
           {list.map((a) => {
             const scheduled = new Date(a.publish_at).getTime() > now

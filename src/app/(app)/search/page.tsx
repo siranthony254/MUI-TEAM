@@ -1,8 +1,9 @@
 import Link from 'next/link'
+import { SearchX } from 'lucide-react'
 import { requireMember } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { fmtDateTime, fmtDay } from '@/lib/time'
-import { Card, PageTitle, SectionTitle } from '@/components/ui'
+import { Card, PageTitle, SectionTitle, EmptyState} from '@/components/ui'
 
 export const dynamic = 'force-dynamic'
 
@@ -71,7 +72,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
       {!ready ? (
         <Card><p className="text-sm text-neutral-600">Type at least two characters.</p></Card>
       ) : total === 0 ? (
-        <Card><p className="text-sm text-neutral-600">Nothing found for &ldquo;{q}&rdquo;.</p></Card>
+        <Card><EmptyState icon={SearchX} label={`Nothing found for “${q}”.`} /></Card>
       ) : (
         <>
           <Group title="People" count={people!.data?.length ?? 0}>

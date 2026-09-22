@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { ListChecks, Users, FileText, Scale, CheckSquare, ClipboardList, PlusCircle } from 'lucide-react'
 import { notFound } from 'next/navigation'
 import { requireMember } from '@/lib/auth'
 import { can } from '@/lib/permissions'
@@ -44,12 +45,12 @@ export default async function MeetingPage({ params }: { params: Promise<{ id: st
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
-          <SectionTitle>Agenda</SectionTitle>
+          <SectionTitle icon={ListChecks}>Agenda</SectionTitle>
           {agendaItems.length === 0 ? <p className="text-sm text-neutral-500">No agenda set.</p>
             : <ol className="list-decimal space-y-1 pl-5 text-sm">{agendaItems.map((a, i) => <li key={i}>{a}</li>)}</ol>}
         </Card>
         <Card>
-          <SectionTitle>Participants ({attendees.length})</SectionTitle>
+          <SectionTitle icon={Users}>Participants ({attendees.length})</SectionTitle>
           <ul className="space-y-1 text-sm">
             {attendees.map((a) => (
               <li key={a.id}>
@@ -67,14 +68,14 @@ export default async function MeetingPage({ params }: { params: Promise<{ id: st
 
       {!canManage && meeting.minutes && (
         <Card className="mt-4">
-          <SectionTitle>Minutes</SectionTitle>
+          <SectionTitle icon={FileText}>Minutes</SectionTitle>
           <p className="whitespace-pre-wrap text-sm">{meeting.minutes}</p>
         </Card>
       )}
 
       {(decisions ?? []).length > 0 && (
         <Card className="mt-4">
-          <SectionTitle>Decisions from this meeting</SectionTitle>
+          <SectionTitle icon={Scale}>Decisions from this meeting</SectionTitle>
           <ul className="space-y-3 text-sm">
             {(decisions as Decision[]).map((d) => (
               <li key={d.id}><p className="font-medium">{d.title}</p><p className="text-neutral-600">{d.decision}</p></li>
@@ -84,7 +85,7 @@ export default async function MeetingPage({ params }: { params: Promise<{ id: st
       )}
 
       <Card className="mt-4">
-        <SectionTitle>Action items ({(actions ?? []).length})</SectionTitle>
+        <SectionTitle icon={CheckSquare}>Action items ({(actions ?? []).length})</SectionTitle>
         {(actions ?? []).length === 0 ? <p className="text-sm text-neutral-500">None yet.</p> : (
           <ul className="divide-y divide-neutral-100">
             {(actions as Task[]).map((t) => (
@@ -112,15 +113,15 @@ export default async function MeetingPage({ params }: { params: Promise<{ id: st
             </form>
           </ManagePanel>
           <Card className="mt-4">
-            <SectionTitle>Minutes &amp; attendance</SectionTitle>
+            <SectionTitle icon={ClipboardList}>Minutes &amp; attendance</SectionTitle>
             <OutcomeForm id={meeting.id} status={meeting.status} minutes={meeting.minutes ?? ''} attendees={attendees} />
           </Card>
           <Card className="mt-4">
-            <SectionTitle>Add an action item</SectionTitle>
+            <SectionTitle icon={PlusCircle}>Add an action item</SectionTitle>
             <ActionItemForm meetingId={meeting.id} people={(members ?? []).map((m) => ({ id: m.id, label: m.full_name }))} />
           </Card>
           <Card className="mt-4">
-            <SectionTitle>Record a decision</SectionTitle>
+            <SectionTitle icon={Scale}>Record a decision</SectionTitle>
             <DecisionForm meetingId={meeting.id} />
           </Card>
         </>
