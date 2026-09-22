@@ -26,11 +26,11 @@ drop policy if exists report_templates_write on public.report_templates;
 create policy report_templates_write on public.report_templates for all to authenticated
   using (
     public.is_super_admin() or public.is_director()
-    or (department_id is not null and public.is_department_director(department_id))
+    or (department_id is not null and public.directs_department(department_id))
   )
   with check (
     public.is_super_admin() or public.is_director()
-    or (department_id is not null and public.is_department_director(department_id))
+    or (department_id is not null and public.directs_department(department_id))
   );
 
 -- Reports move to a flexible, per-report snapshot of the template used at the time it was
