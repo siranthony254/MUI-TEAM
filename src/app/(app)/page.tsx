@@ -1,11 +1,11 @@
 import Link from 'next/link'
-import { CheckCircle2 } from 'lucide-react'
+import { AlarmClock, ArrowUpRight, CalendarClock, CheckCircle2, Clock4, Compass, Eye, ListTodo, Send, Target } from 'lucide-react'
 import { requireMember, isExecOrAbove } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { isDueToday, isOverdue, fmtDue, PRIORITY_ORDER } from '@/lib/tasks'
 import type { Task } from '@/lib/types'
 import { fmtDateTime, nairobiHour } from '@/lib/time'
-import { Card, PageTitle, StatusBadge, EmptyState} from '@/components/ui'
+import { Card, PageTitle, StatusBadge, EmptyState, StatTile, ProgressRing } from '@/components/ui'
 import { markOnboardingDone } from './home-actions'
 import { InstallBanner } from '@/components/pwa/InstallApp'
 
@@ -75,18 +75,29 @@ export default async function Dashboard() {
     .sort((a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority])
     .slice(0, 6)
 
-  const stats = [
-    { label: 'Overdue', n: overdue.length, tone: 'text-red-600', filter: 'overdue' },
-    { label: 'Due today', n: today.length, tone: 'text-orange-600', filter: 'today' },
-    { label: 'Upcoming', n: upcoming.length, tone: 'text-amber-600', filter: 'upcoming' },
-    { label: 'Completed', n: done.length, tone: 'text-green-600', filter: 'completed' },
+  // A live sense of momentum: how much of what's currently on your plate is already done,
+  // weighted to what you've actually closed out this week rather than an all-time total
+  // that would only ever climb and stop meaning anything.
+  const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000
+  const completedThisWeek = mine.filter((t) => t.completed_at && new Date(t.completed_at).getTime() > weekAgo).length
+  const momentumBase = completedThisWeek + open.length
+  const momentum = momentumBase > 0 ? (completedThisWeek / momentumBase) * 100 : 100
+
+  const stats: { label: string; n: number; tone: 'red' | 'orange' | 'amber' | 'green'; icon: typeof AlarmClock; filter: string }[] = [
+    { label: 'Overdue', n: overdue.length, tone: 'red', icon: AlarmClock, filter: 'overdue' },
+    { label: 'Due today', n: today.length, tone: 'orange', icon: Clock4, filter: 'today' },
+    { label: 'Upcoming', n: upcoming.length, tone: 'amber', icon: CalendarClock, filter: 'upcoming' },
+    { label: 'Completed', n: done.length, tone: 'green', icon: CheckCircle2, filter: 'completed' },
   ]
 
   return (
     <>
-      <PageTitle sub="What do you need to know and do right now?">
-        {greeting()}, {me.preferred_name || me.full_name.split(' ')[0]}.
-      </PageTitle>
+      <div className="mb-5 flex items-start justify-between gap-4">
+        <PageTitle sub="What do you need to know and do right now?">
+          {greeting()}, {me.preferred_name || me.full_name.split(' ')[0]}.
+        </PageTitle>
+        {(open.length > 0 || completedThisWeek > 0) && <ProgressRing value={momentum} label="this week" />}
+      </div>
 
       <div className="mb-4"><InstallBanner /></div>
 
@@ -135,24 +146,23 @@ export default async function Dashboard() {
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {stats.map((s) => (
-          <Link key={s.label} href={`/tasks?filter=${s.filter}`}>
-            <Card className="transition hover:border-amber-400">
-              <p className={`text-3xl font-bold ${s.tone}`}>{s.n}</p>
-              <p className="text-sm text-neutral-600">{s.label}</p>
-            </Card>
-          </Link>
+          <StatTile key={s.label} icon={s.icon} label={s.label} value={s.n} tone={s.tone} href={`/tasks?filter=${s.filter}`} />
         ))}
       </div>
 
       {(delegatedOut ?? 0) > 0 && (
-        <Link href="/tasks?filter=delegated" className="mt-4 block rounded-xl border border-neutral-200 bg-white p-4 text-sm text-neutral-700">
-          <strong>{delegatedOut}</strong> delegated {delegatedOut === 1 ? 'task is' : 'tasks are'} awaiting others →
+        <Link href="/tasks?filter=delegated" className="mt-4 flex items-center gap-2 rounded-xl border border-neutral-200 bg-white p-4 text-sm text-neutral-700 shadow-sm shadow-neutral-900/[0.04] transition-transform duration-150 hover:-translate-y-0.5 hover:shadow-md">
+          <Send size={16} className="shrink-0 text-neutral-400" aria-hidden />
+          <span><strong>{delegatedOut}</strong> delegated {delegatedOut === 1 ? 'task is' : 'tasks are'} awaiting others</span>
+          <ArrowUpRight size={14} className="ml-auto shrink-0 text-neutral-400" aria-hidden />
         </Link>
       )}
 
       {isExecOrAbove(me) && (toReview ?? 0) > 0 && (
-        <Link href="/tasks?filter=review" className="mt-4 block rounded-xl border border-purple-200 bg-purple-50 p-4 text-sm text-purple-900">
-          <strong>{toReview}</strong> {toReview === 1 ? 'task is' : 'tasks are'} waiting for your review →
+        <Link href="/tasks?filter=review" className="mt-4 flex items-center gap-2 rounded-xl border border-purple-200 bg-purple-50 p-4 text-sm text-purple-900 shadow-sm shadow-neutral-900/[0.04] transition-transform duration-150 hover:-translate-y-0.5 hover:shadow-md">
+          <Eye size={16} className="shrink-0 text-purple-500" aria-hidden />
+          <span><strong>{toReview}</strong> {toReview === 1 ? 'task is' : 'tasks are'} waiting for your review</span>
+          <ArrowUpRight size={14} className="ml-auto shrink-0 text-purple-400" aria-hidden />
         </Link>
       )}
 
@@ -162,14 +172,17 @@ export default async function Dashboard() {
         </Link>
       )}
 
-      <h2 className="mt-8 mb-3 text-sm font-semibold uppercase tracking-wide text-neutral-500">Needs your attention</h2>
+      <h2 className="mt-8 mb-3 flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wide text-neutral-500">
+        <ListTodo size={14} className="text-amber-600" aria-hidden /> Needs your attention
+      </h2>
       {focus.length === 0 ? (
         <Card><EmptyState icon={CheckCircle2} label="Nothing overdue or due today." hint="You're clear — nice work." /></Card>
       ) : (
         <div className="space-y-2">
           {focus.map((t) => (
             <Link key={t.id} href={`/tasks/${t.id}`}>
-              <Card className="flex items-center justify-between gap-3 transition hover:border-amber-400">
+              <Card className={`flex items-center justify-between gap-3 border-l-4 transition-transform duration-150 hover:-translate-y-0.5 hover:shadow-md ${
+                isOverdue(t) ? 'border-l-red-500' : 'border-l-orange-400'}`}>
                 <div className="min-w-0">
                   <p className="truncate font-medium">{t.title}</p>
                   <p className={`text-xs ${isOverdue(t) ? 'text-red-600' : 'text-neutral-500'}`}>
@@ -185,13 +198,20 @@ export default async function Dashboard() {
 
       {(nextMeetings ?? []).length > 0 && (
         <>
-          <h2 className="mt-8 mb-3 text-sm font-semibold uppercase tracking-wide text-neutral-500">Coming up</h2>
+          <h2 className="mt-8 mb-3 flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wide text-neutral-500">
+            <CalendarClock size={14} className="text-amber-600" aria-hidden /> Coming up
+          </h2>
           <div className="space-y-2">
             {(nextMeetings ?? []).map((m) => (
               <Link key={m.id} href={`/meetings/${m.id}`}>
-                <Card className="transition hover:border-amber-400">
-                  <p className="font-medium">{m.title}</p>
-                  <p className="text-xs text-neutral-500">{fmtDateTime(m.starts_at)}</p>
+                <Card className="flex items-center gap-3 transition-transform duration-150 hover:-translate-y-0.5 hover:shadow-md">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-700">
+                    <CalendarClock size={16} aria-hidden />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate font-medium">{m.title}</span>
+                    <span className="block text-xs text-neutral-500">{fmtDateTime(m.starts_at)}</span>
+                  </span>
                 </Card>
               </Link>
             ))}
@@ -200,8 +220,10 @@ export default async function Dashboard() {
       )}
 
       <Card className="mt-8">
-        <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">My responsibility</p>
-        <p className="mt-1 font-medium">{me.title ?? 'Team member'}</p>
+        <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+          <Compass size={13} className="text-amber-600" aria-hidden /> My responsibility
+        </p>
+        <p className="mt-1 flex items-center gap-1.5 font-medium"><Target size={14} className="shrink-0 text-neutral-400" aria-hidden /> {me.title ?? 'Team member'}</p>
         {me.mandate ? <p className="mt-1 text-sm text-neutral-600">{me.mandate}</p>
           : <p className="mt-1 text-sm text-neutral-500">Your mandate hasn&apos;t been set yet. Ask an administrator to define it.</p>}
         <Link href="/responsibilities" className="mt-2 inline-block text-sm font-medium text-amber-700 hover:underline">

@@ -111,3 +111,26 @@ export function StatTile({
   )
   return href ? <Link href={href} className="block">{body}</Link> : body
 }
+
+/** A small ring of current momentum — how much of what's on your plate right now is already done. */
+export function ProgressRing({ value, size = 56, label }: { value: number; size?: number; label?: string }) {
+  const pct = Math.max(0, Math.min(100, Math.round(value)))
+  const r = (size - 8) / 2
+  const c = 2 * Math.PI * r
+  return (
+    <div className="flex flex-col items-center gap-1" role="img" aria-label={`${pct}% ${label ?? 'complete'}`}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90">
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="currentColor" strokeWidth={6} className="text-neutral-200" />
+        <circle
+          cx={size / 2} cy={size / 2} r={r} fill="none" stroke="currentColor" strokeWidth={6} strokeLinecap="round"
+          className="text-amber-500 transition-[stroke-dashoffset] duration-700 ease-out"
+          strokeDasharray={c} strokeDashoffset={c - (c * pct) / 100}
+        />
+        <text x={size / 2} y={size / 2} dy=".08em" textAnchor="middle" className="rotate-90 fill-[#0D1F35] text-[13px] font-bold" style={{ transformOrigin: 'center', transformBox: 'fill-box' }}>
+          {pct}%
+        </text>
+      </svg>
+      {label && <span className="text-[11px] text-neutral-500">{label}</span>}
+    </div>
+  )
+}
