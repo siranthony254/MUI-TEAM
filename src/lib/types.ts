@@ -138,6 +138,13 @@ export interface Decision {
   project_id: string | null
 }
 
+export interface ReportSection {
+  key: string
+  label: string
+  hint?: string | null
+  value: string | null
+}
+
 export interface Report {
   id: string
   author_id: string
@@ -149,9 +156,19 @@ export interface Report {
   challenges: string | null
   metrics: string | null
   recommendations: string | null
+  sections: ReportSection[] | null
   status: 'draft' | 'submitted'
   submitted_at: string | null
   kind: 'personal' | 'department'
+}
+
+export interface ReportTemplate {
+  id: string
+  department_id: string | null
+  name: string
+  sections: { key: string; label: string; hint?: string | null }[]
+  updated_by: string | null
+  updated_at: string
 }
 
 export interface Channel {

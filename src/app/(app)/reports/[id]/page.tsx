@@ -30,10 +30,14 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
     : { data: null }
   const editable = report.author_id === me.id && report.status === 'draft'
 
-  const sections: [string, string | null][] = [
-    ['Activities', report.activities], ['Completed', report.completed], ['Challenges', report.challenges],
-    ['Metrics', report.metrics], ['Recommendations', report.recommendations],
-  ]
+  const sections: { label: string; hint?: string | null; value: string | null }[] =
+    report.sections && report.sections.length > 0
+      ? report.sections.map((s) => ({ label: s.label, hint: s.hint, value: s.value }))
+      : [
+          { label: 'Activities', value: report.activities }, { label: 'Completed', value: report.completed },
+          { label: 'Challenges', value: report.challenges }, { label: 'Metrics', value: report.metrics },
+          { label: 'Recommendations', value: report.recommendations },
+        ]
 
   return (
     <>
@@ -57,10 +61,11 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
         </>
       ) : (
         <div className="space-y-4">
-          {sections.map(([label, value]) => (
-            <Card key={label}>
-              <SectionTitle>{label}</SectionTitle>
-              <p className="whitespace-pre-wrap text-sm">{value ?? <span className="text-neutral-500">Nothing recorded.</span>}</p>
+          {sections.map((s) => (
+            <Card key={s.label}>
+              <SectionTitle>{s.label}</SectionTitle>
+              {s.hint && !s.value && <p className="mb-1 text-xs text-neutral-400 dark:text-neutral-500">{s.hint}</p>}
+              <p className="whitespace-pre-wrap text-sm">{s.value ?? <span className="text-neutral-500">Nothing recorded.</span>}</p>
             </Card>
           ))}
           <Card>

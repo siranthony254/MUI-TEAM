@@ -75,6 +75,9 @@ export default async function DepartmentPage({ params }: { params: Promise<{ id:
         {channel && <Link href={`/chat/${channel.id}`} className="font-medium text-amber-700 hover:underline">Department chat →</Link>}
         {(isDirector || isExecOrAbove(me)) && canAssign && <Link href="/tasks/new" className="font-medium text-amber-700 hover:underline">Assign a task →</Link>}
         {(isDirector || hasOrgView(me)) && <Link href="/reports" className="font-medium text-amber-700 hover:underline">Reports →</Link>}
+        {(isDirector || me.role === 'super_admin' || me.is_director) && (
+          <Link href={`/admin/departments/${dept.id}/template`} className="font-medium text-amber-700 hover:underline">Edit report template →</Link>
+        )}
       </div>
 
       {detailed && (

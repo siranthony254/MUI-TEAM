@@ -25,6 +25,10 @@ export default async function DepartmentsAdmin() {
       <div className="mt-2" />
       <PageTitle sub="Create departments and choose who directs each. A director sees their department's work and assigns within it.">Departments</PageTitle>
 
+      <Link href="/admin/departments/template" className="mb-4 block text-sm font-medium text-amber-700 hover:underline">
+        Edit the organisation-wide report template →
+      </Link>
+
       <div className="space-y-3">
         {(depts.data ?? []).map((d) => {
           const members = (people.data ?? []).filter((p) => p.department_id === d.id)
@@ -47,10 +51,13 @@ export default async function DepartmentsAdmin() {
                   <button className={buttonClass}>Save</button>
                 </div>
               </form>
-              <form action={deleteDepartment} className="mt-2">
-                <input type="hidden" name="id" value={d.id} />
-                <ConfirmButton message={`Delete the ${d.name} department? Its people and tasks stay but lose the department, and its chat channel and messages are deleted.`} className="text-xs text-red-600 hover:underline">Delete department</ConfirmButton>
-              </form>
+              <div className="mt-2 flex items-center gap-4">
+                <Link href={`/admin/departments/${d.id}/template`} className="text-xs font-medium text-amber-700 hover:underline">Report template</Link>
+                <form action={deleteDepartment}>
+                  <input type="hidden" name="id" value={d.id} />
+                  <ConfirmButton message={`Delete the ${d.name} department? Its people and tasks stay but lose the department, and its chat channel and messages are deleted.`} className="text-xs text-red-600 hover:underline">Delete department</ConfirmButton>
+                </form>
+              </div>
             </Card>
           )
         })}

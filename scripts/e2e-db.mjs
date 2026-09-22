@@ -552,6 +552,36 @@ async function main() {
     })
   }
 
+  // ---- migration 14: report templates ----
+  const has14 = !(await svc.from('report_templates').select('id').limit(1)).error
+  if (!has14) console.log('SKIP migration 14 tests (report_templates not installed yet)')
+  if (has14) {
+    let deptTemplateExisted = false
+    await t('report templates: a department director can set their own template; others cannot', async () => {
+      const before = await svc.from('report_templates').select('id').eq('department_id', created.dept).maybeSingle()
+      deptTemplateExisted = !!before.data
+      const sections = [{ key: 'zztest_field', label: `${P} Field`, hint: 'A department-specific question.' }]
+      const asPeer = await D.client.from('report_templates').upsert(
+        { department_id: created.dept, name: 'x', sections }, { onConflict: 'department_id' },
+      ).select('id')
+      ok(asPeer.error || asPeer.data.length === 0, 'a non-director set another department\'s template')
+      noErr(await E.client.from('report_templates').upsert(
+        { department_id: created.dept, name: `${P} dept report`, sections }, { onConflict: 'department_id' },
+      ))
+    })
+
+    await t('starting a department report snapshots that department\'s template', async () => {
+      const rpt = noErr(await E.client.from('reports').insert({
+        author_id: E.id, kind: 'department', department_id: created.dept,
+        period_start: '2026-09-01', period_end: '2026-09-07',
+        sections: [{ key: 'zztest_field', label: `${P} Field`, hint: 'A department-specific question.', value: null }],
+      }).select('id, sections').single())
+      ok(Array.isArray(rpt.sections) && rpt.sections[0]?.key === 'zztest_field', 'report did not carry the department\'s section')
+    })
+
+    if (!deptTemplateExisted) await svc.from('report_templates').delete().eq('department_id', created.dept)
+  }
+
 }
 
 async function cleanup() {

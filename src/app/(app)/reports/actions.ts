@@ -7,6 +7,8 @@ import { requireMember, isExecOrAbove } from '@/lib/auth'
 import { deliverSoon } from '@/lib/notify/after'
 import { monthRange } from '@/lib/time'
 import { can } from '@/lib/permissions'
+import { resolveReportTemplate } from '@/lib/report-templates'
+import type { ReportSection } from '@/lib/types'
 
 export interface ReportState { error?: string; ok?: string }
 
@@ -40,9 +42,14 @@ export async function createReport(_prev: ReportState | undefined, fd: FormData)
   const { data: existing } = await query.maybeSingle()
   if (existing) redirect(`/reports/${existing.id}`)
 
+  // A snapshot of the department's own report template (or the organisation default), so a later
+  // edit to the template never retroactively changes a report that's already been started.
+  const template = await resolveReportTemplate(supabase, departmentId)
+  const sections: ReportSection[] = template.map((s) => ({ key: s.key, label: s.label, hint: s.hint ?? null, value: null }))
+
   const { data, error } = await supabase
     .from('reports')
-    .insert({ author_id: me.id, kind, department_id: departmentId, period_start: start, period_end: end })
+    .insert({ author_id: me.id, kind, department_id: departmentId, period_start: start, period_end: end, sections })
     .select('id')
     .single()
   if (error) return { error: error.message }
@@ -54,22 +61,31 @@ export async function saveReport(_prev: ReportState | undefined, fd: FormData): 
   const id = String(fd.get('id') ?? '')
   const submit = fd.get('intent') === 'submit'
 
-  const fields = {
+  const supabase = await createClient()
+  const { data: current } = await supabase.from('reports').select('sections').eq('id', id).maybeSingle()
+  const currentSections = (current?.sections ?? []) as ReportSection[]
+
+  // Legacy reports (written before templates existed) still use the five fixed columns.
+  const usingTemplate = currentSections.length > 0
+  const fields = usingTemplate ? {} : {
     activities: text(fd, 'activities'),
     completed: text(fd, 'completed'),
     challenges: text(fd, 'challenges'),
     metrics: text(fd, 'metrics'),
     recommendations: text(fd, 'recommendations'),
   }
-  if (submit && !fields.activities && !fields.completed) {
-    return { error: 'Describe your activities or what was completed before submitting.' }
+  const sections: ReportSection[] = currentSections.map((s) => ({ ...s, value: text(fd, `section_${s.key}`) }))
+  const hasContent = usingTemplate ? sections.some((s) => s.value) : !!(fields as { activities?: string | null; completed?: string | null }).activities || !!(fields as { activities?: string | null; completed?: string | null }).completed
+
+  if (submit && !hasContent) {
+    return { error: 'Fill in at least one section before submitting.' }
   }
 
-  const supabase = await createClient()
   const { data, error } = await supabase
     .from('reports')
     .update({
       ...fields,
+      ...(usingTemplate ? { sections } : {}),
       ...(submit ? { status: 'submitted', submitted_at: new Date().toISOString() } : {}),
     })
     .eq('id', id)
