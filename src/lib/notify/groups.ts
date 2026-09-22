@@ -37,8 +37,10 @@ export const GROUPS: Group[] = [
     kinds: ['meeting_invite', 'meeting_soon', 'minutes_prompt'], defaults: { in_app: true, email: true, push: true, sms: false } },
   { id: 'project', label: 'Projects', hint: 'Project changes that involve you', category: 'projects',
     kinds: ['project_update'], defaults: { in_app: true, email: false, push: true, sms: false } },
-  { id: 'announcement', label: 'Announcements', hint: 'Official announcements and campaigns', category: 'announcements',
-    kinds: ['announcement', 'announcement_urgent', 'campaign'], defaults: { in_app: true, email: false, push: true, sms: false } },
+  { id: 'announcement', label: 'Announcements', hint: 'Official announcements from the Executive Director', category: 'announcements',
+    kinds: ['announcement', 'announcement_urgent'], defaults: { in_app: true, email: false, push: true, sms: false } },
+  { id: 'campaign', label: 'Campaigns', hint: 'A targeted message from an admin, sent over the channels they chose', category: 'announcements',
+    kinds: ['campaign'], defaults: { in_app: true, email: true, push: true, sms: false } },
   { id: 'system', label: 'System', hint: 'Reports submitted, access changes and other notices', category: 'system',
     kinds: ['report_submitted', 'admin_granted', 'admin_expired', 'resource_shared'], defaults: { in_app: true, email: true, push: true, sms: false } },
 ]
