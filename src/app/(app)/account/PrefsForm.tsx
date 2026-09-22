@@ -3,11 +3,13 @@
 import { useActionState } from 'react'
 import { buttonClass, inputClass } from '@/components/ui'
 import { saveNotificationPrefs } from './actions'
+import { useFormToast } from '@/components/Toaster'
 
 export function PrefsForm({
   email, push, sms, phone,
 }: { email: boolean; push: boolean; sms: boolean; phone: string }) {
   const [state, action, pending] = useActionState(saveNotificationPrefs, undefined)
+  useFormToast(state)
   return (
     <form action={action} className="max-w-sm space-y-3">
       <label className="flex items-center gap-2 text-sm">

@@ -3,9 +3,11 @@
 import { useActionState, useState } from 'react'
 import { buttonClass, inputClass } from '@/components/ui'
 import { createEvent } from './actions'
+import { useFormToast } from '@/components/Toaster'
 
 export function EventForm() {
   const [state, action, pending] = useActionState(createEvent, undefined)
+  useFormToast(state)
   const [allDay, setAllDay] = useState(false)
   return (
     <form action={action} className="space-y-3" key={state?.ok ? 'done' : 'open'}>

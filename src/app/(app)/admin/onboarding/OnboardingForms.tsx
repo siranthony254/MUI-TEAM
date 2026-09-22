@@ -3,9 +3,11 @@
 import { useActionState } from 'react'
 import { buttonClass, inputClass } from '@/components/ui'
 import { addOnboardingItem, saveWelcome } from './actions'
+import { useFormToast } from '@/components/Toaster'
 
 export function WelcomeForm({ value }: { value: string }) {
   const [state, action, pending] = useActionState(saveWelcome, undefined)
+  useFormToast(state)
   return (
     <form action={action} className="space-y-3">
       <label className="block text-sm font-medium">Welcome message
@@ -20,6 +22,7 @@ export function WelcomeForm({ value }: { value: string }) {
 
 export function AddStepForm() {
   const [state, action, pending] = useActionState(addOnboardingItem, undefined)
+  useFormToast(state)
   return (
     <form action={action} className="space-y-3" key={state?.ok ? 'done' : 'open'}>
       <label className="block text-sm font-medium">Step

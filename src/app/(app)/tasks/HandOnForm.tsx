@@ -4,6 +4,7 @@ import { useActionState } from 'react'
 import { buttonClass, inputClass } from '@/components/ui'
 import { ChannelPicker } from './TaskForm'
 import { reassignTask } from './actions'
+import { useFormToast } from '@/components/Toaster'
 
 interface Option { id: string; label: string }
 
@@ -12,6 +13,7 @@ export function HandOnForm({
   taskId, people, delegating, currentTitle,
 }: { taskId: string; people: Option[]; delegating: boolean; currentTitle: string }) {
   const [state, action, pending] = useActionState(reassignTask, undefined)
+  useFormToast(state)
   const verb = delegating ? 'Delegate' : 'Reassign'
   return (
     <form action={action} className="space-y-3">

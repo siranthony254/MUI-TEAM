@@ -4,6 +4,7 @@ import { useActionState } from 'react'
 import { buttonClass, inputClass } from '@/components/ui'
 import type { Project } from '@/lib/types'
 import { updateProject } from '../actions'
+import { useFormToast } from '@/components/Toaster'
 
 interface Option { id: string; label: string }
 
@@ -11,6 +12,7 @@ export function ProjectEditForm({
   project, departments, people,
 }: { project: Project; departments: Option[]; people: Option[] }) {
   const [state, action, pending] = useActionState(updateProject, undefined)
+  useFormToast(state)
   return (
     <form action={action} className="space-y-3">
       <input type="hidden" name="id" value={project.id} />

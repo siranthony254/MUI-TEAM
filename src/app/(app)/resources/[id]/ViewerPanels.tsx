@@ -6,6 +6,7 @@ import { buttonClass, inputClass } from '@/components/ui'
 import { createClient } from '@/lib/supabase/client'
 import { prepareUpload } from '../actions'
 import { replaceResourceFile, replaceResourceLink, shareResource } from '../viewer-actions'
+import { useFormToast } from '@/components/Toaster'
 
 export function CopyLink() {
   const [copied, setCopied] = useState(false)
@@ -22,6 +23,7 @@ export function CopyLink() {
 
 export function ShareForm({ resourceId, people }: { resourceId: string; people: { id: string; label: string }[] }) {
   const [state, action, pending] = useActionState(shareResource, undefined)
+  useFormToast(state)
   return (
     <form action={action} className="space-y-3">
       <input type="hidden" name="id" value={resourceId} />
@@ -81,6 +83,7 @@ export function ReplaceFileForm({ resourceId }: { resourceId: string }) {
 
 export function ReplaceLinkForm({ resourceId, current }: { resourceId: string; current: string }) {
   const [state, action, pending] = useActionState(replaceResourceLink, undefined)
+  useFormToast(state)
   return (
     <form action={action} className="space-y-3">
       <input type="hidden" name="id" value={resourceId} />

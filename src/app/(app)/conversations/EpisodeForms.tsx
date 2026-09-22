@@ -4,6 +4,7 @@ import { useActionState, useState } from 'react'
 import { buttonClass, inputClass } from '@/components/ui'
 import { EPISODE_STAGES, EPISODE_STAGE_LABEL, type Episode, type EpisodeTemplateItem } from '@/lib/types'
 import { createEpisode, updateEpisode } from './actions'
+import { useFormToast } from '@/components/Toaster'
 
 interface Option { id: string; label: string }
 
@@ -16,6 +17,7 @@ const isoToLocal = (iso: string | null) => {
 
 export function NewEpisodeForm({ projects, people, template }: { projects: Option[]; people: Option[]; template: EpisodeTemplateItem[] }) {
   const [state, action, pending] = useActionState(createEpisode, undefined)
+  useFormToast(state)
   const [generate, setGenerate] = useState(true)
   return (
     <form action={action} className="space-y-3">
@@ -80,6 +82,7 @@ export function NewEpisodeForm({ projects, people, template }: { projects: Optio
 
 export function EditEpisodeForm({ episode }: { episode: Episode }) {
   const [state, action, pending] = useActionState(updateEpisode, undefined)
+  useFormToast(state)
   return (
     <form action={action} className="space-y-3">
       <input type="hidden" name="id" value={episode.id} />

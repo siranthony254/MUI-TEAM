@@ -3,6 +3,7 @@
 import { useActionState, useState } from 'react'
 import { buttonClass, inputClass } from '@/components/ui'
 import { createReport } from './actions'
+import { useFormToast } from '@/components/Toaster'
 
 export function NewReportForm({
   canDepartment, departments, defaultDepartment, start, end,
@@ -14,6 +15,7 @@ export function NewReportForm({
   end: string
 }) {
   const [state, action, pending] = useActionState(createReport, undefined)
+  useFormToast(state)
   const [kind, setKind] = useState('personal')
   return (
     <form action={action} className="space-y-3">

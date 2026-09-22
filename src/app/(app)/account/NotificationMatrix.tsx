@@ -4,6 +4,7 @@ import { useActionState } from 'react'
 import { buttonClass } from '@/components/ui'
 import type { Group, PrefRow } from '@/lib/notify/groups'
 import { saveNotificationMatrix } from './actions'
+import { useFormToast } from '@/components/Toaster'
 
 const CHANNELS = [['in_app', 'In-app'], ['email', 'Email'], ['push', 'Push'], ['sms', 'SMS']] as const
 
@@ -16,6 +17,7 @@ export function NotificationMatrix({
   masters: { email: boolean; push: boolean; sms: boolean }
 }) {
   const [state, action, pending] = useActionState(saveNotificationMatrix, undefined)
+  useFormToast(state)
   const value = (g: Group, ch: (typeof CHANNELS)[number][0]) => {
     const row = prefs.find((p) => p.event_group === g.id)
     return row ? row[ch] : g.defaults[ch]

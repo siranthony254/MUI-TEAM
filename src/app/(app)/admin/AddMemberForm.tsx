@@ -4,6 +4,7 @@ import { useActionState } from 'react'
 import { buttonClass, inputClass } from '@/components/ui'
 import { AccessGrantsFields } from '@/components/admin/AccessGrants'
 import { addMember } from './actions'
+import { useFormToast } from '@/components/Toaster'
 
 interface Option { id: string; label: string }
 
@@ -31,6 +32,7 @@ export function AddMemberForm({
   canGrantPermissions: boolean
 }) {
   const [state, action, pending] = useActionState(addMember, undefined)
+  useFormToast(state)
   return (
     <form action={action} className="space-y-4">
       <Section title="Who they are">

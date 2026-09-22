@@ -3,9 +3,11 @@
 import { useActionState, useState } from 'react'
 import { buttonClass, inputClass } from '@/components/ui'
 import { createAnnouncement } from './actions'
+import { useFormToast } from '@/components/Toaster'
 
 export function AnnouncementForm({ departments }: { departments: { id: string; label: string }[] }) {
   const [state, action, pending] = useActionState(createAnnouncement, undefined)
+  useFormToast(state)
   const [audience, setAudience] = useState('all')
   return (
     <form action={action} className="space-y-3" key={state?.ok ? 'done' : 'open'}>

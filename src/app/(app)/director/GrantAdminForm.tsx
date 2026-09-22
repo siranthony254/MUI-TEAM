@@ -3,9 +3,11 @@
 import { useActionState } from 'react'
 import { buttonClass, inputClass } from '@/components/ui'
 import { grantAdmin } from './actions'
+import { useFormToast } from '@/components/Toaster'
 
 export function GrantAdminForm({ people }: { people: { id: string; label: string }[] }) {
   const [state, action, pending] = useActionState(grantAdmin, undefined)
+  useFormToast(state)
   return (
     <form action={action} className="space-y-3" key={state?.ok ? 'done' : 'open'}>
       <div className="grid gap-3 sm:grid-cols-2">

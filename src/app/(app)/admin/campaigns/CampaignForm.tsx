@@ -3,11 +3,13 @@
 import { useActionState, useState } from 'react'
 import { buttonClass, inputClass } from '@/components/ui'
 import { sendCampaign } from './actions'
+import { useFormToast } from '@/components/Toaster'
 
 interface Option { id: string; label: string }
 
 export function CampaignForm({ departments, people }: { departments: Option[]; people: Option[] }) {
   const [state, action, pending] = useActionState(sendCampaign, undefined)
+  useFormToast(state)
   const [audience, setAudience] = useState('all')
   return (
     <form action={action} className="space-y-3" key={state?.ok ? 'done' : 'open'}>

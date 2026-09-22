@@ -2,9 +2,11 @@
 
 import { useActionState } from 'react'
 import { requestReset } from './actions'
+import { useFormToast } from '@/components/Toaster'
 
 export function ForgotForm() {
   const [state, action, pending] = useActionState(requestReset, undefined)
+  useFormToast(state)
   return (
     <form action={action} className="space-y-4">
       <label className="block text-sm font-medium text-neutral-700">

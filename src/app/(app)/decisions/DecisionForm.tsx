@@ -3,11 +3,13 @@
 import { useActionState } from 'react'
 import { buttonClass, inputClass } from '@/components/ui'
 import { createDecision } from './actions'
+import { useFormToast } from '@/components/Toaster'
 
 interface Option { id: string; label: string }
 
 export function NewDecisionForm({ people, projects }: { people: Option[]; projects: Option[] }) {
   const [state, action, pending] = useActionState(createDecision, undefined)
+  useFormToast(state)
   return (
     <form action={action} className="space-y-3" key={state?.ok ? 'done' : 'open'}>
       <label className="block text-sm font-medium">Decision

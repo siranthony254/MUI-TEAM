@@ -4,6 +4,7 @@ import { useActionState } from 'react'
 import { buttonClass, inputClass } from '@/components/ui'
 import type { Report } from '@/lib/types'
 import { saveReport } from '../actions'
+import { useFormToast } from '@/components/Toaster'
 
 const FIELDS: [keyof Report, string, string][] = [
   ['activities', 'Activities', 'What did you and your team work on?'],
@@ -15,6 +16,7 @@ const FIELDS: [keyof Report, string, string][] = [
 
 export function ReportForm({ report }: { report: Report }) {
   const [state, action, pending] = useActionState(saveReport, undefined)
+  useFormToast(state)
   return (
     <form action={action} className="space-y-4">
       <input type="hidden" name="id" value={report.id} />

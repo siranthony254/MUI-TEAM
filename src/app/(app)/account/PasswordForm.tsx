@@ -3,9 +3,11 @@
 import { useActionState } from 'react'
 import { buttonClass, inputClass } from '@/components/ui'
 import { changePassword } from './actions'
+import { useFormToast } from '@/components/Toaster'
 
 export function PasswordForm() {
   const [state, action, pending] = useActionState(changePassword, undefined)
+  useFormToast(state)
   return (
     <form action={action} className="max-w-sm space-y-3">
       <label className="block text-sm font-medium">New password (min. 10 characters)

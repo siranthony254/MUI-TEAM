@@ -3,11 +3,13 @@
 import { useActionState } from 'react'
 import { buttonClass, inputClass } from '@/components/ui'
 import { createMeeting } from './actions'
+import { useFormToast } from '@/components/Toaster'
 
 interface Option { id: string; label: string }
 
 export function MeetingForm({ people, projects }: { people: Option[]; projects: Option[] }) {
   const [state, action, pending] = useActionState(createMeeting, undefined)
+  useFormToast(state)
   return (
     <form action={action} className="space-y-4">
       <label className="block text-sm font-medium">Title

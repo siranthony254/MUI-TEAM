@@ -3,6 +3,7 @@
 import { useActionState } from 'react'
 import { inputClass } from '@/components/ui'
 import { deactivateMember, reactivateMember, resetAccess } from '../../actions'
+import { useFormToast } from '@/components/Toaster'
 
 interface Option { id: string; label: string }
 
@@ -10,8 +11,11 @@ export function AccessPanel({
   memberId, active, heirs, defaultHeir,
 }: { memberId: string; active: boolean; heirs: Option[]; defaultHeir: string }) {
   const [resetState, resetAction, resetting] = useActionState(resetAccess, undefined)
+  useFormToast(resetState)
   const [offState, offAction, offing] = useActionState(deactivateMember, undefined)
+  useFormToast(offState)
   const [onState, onAction, oning] = useActionState(reactivateMember, undefined)
+  useFormToast(onState)
 
   const msg = (s?: { error?: string; ok?: string }) => (
     <>

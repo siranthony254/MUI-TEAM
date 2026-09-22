@@ -9,6 +9,7 @@ import {
   updateAnnouncement, updateDecision, updateEvent, updateMeeting, updateResource, updateTask, editMessage,
   type ManageState,
 } from './manage-actions'
+import { useFormToast } from '@/components/Toaster'
 
 interface Option { id: string; label: string }
 
@@ -25,6 +26,7 @@ const label = 'block text-sm font-medium'
 
 export function TaskEditForm({ task, projects, departments }: { task: Task; projects: Option[]; departments: Option[] }) {
   const [state, action, pending] = useActionState(updateTask, undefined)
+  useFormToast(state)
   return (
     <form action={action} className="space-y-3">
       <input type="hidden" name="id" value={task.id} />
@@ -63,6 +65,7 @@ export function TaskEditForm({ task, projects, departments }: { task: Task; proj
 
 export function MeetingEditForm({ meeting }: { meeting: Meeting }) {
   const [state, action, pending] = useActionState(updateMeeting, undefined)
+  useFormToast(state)
   return (
     <form action={action} className="space-y-3">
       <input type="hidden" name="id" value={meeting.id} />
@@ -81,6 +84,7 @@ export function MeetingEditForm({ meeting }: { meeting: Meeting }) {
 
 export function DecisionEditForm({ decision, people, projects }: { decision: Decision; people: Option[]; projects: Option[] }) {
   const [state, action, pending] = useActionState(updateDecision, undefined)
+  useFormToast(state)
   return (
     <form action={action} className="space-y-3">
       <input type="hidden" name="id" value={decision.id} />
@@ -109,6 +113,7 @@ export function DecisionEditForm({ decision, people, projects }: { decision: Dec
 
 export function EventEditForm({ event }: { event: CalendarEvent }) {
   const [state, action, pending] = useActionState(updateEvent, undefined)
+  useFormToast(state)
   return (
     <form action={action} className="space-y-3">
       <input type="hidden" name="id" value={event.id} />
@@ -138,6 +143,7 @@ export function EventEditForm({ event }: { event: CalendarEvent }) {
 
 export function ResourceEditForm({ resource }: { resource: Resource }) {
   const [state, action, pending] = useActionState(updateResource, undefined)
+  useFormToast(state)
   return (
     <form action={action} className="space-y-3">
       <input type="hidden" name="id" value={resource.id} />
@@ -163,6 +169,7 @@ export function ResourceEditForm({ resource }: { resource: Resource }) {
 
 export function AnnouncementEditForm({ announcement }: { announcement: Announcement }) {
   const [state, action, pending] = useActionState(updateAnnouncement, undefined)
+  useFormToast(state)
   return (
     <form action={action} className="space-y-3">
       <input type="hidden" name="id" value={announcement.id} />
@@ -182,6 +189,7 @@ export function AnnouncementEditForm({ announcement }: { announcement: Announcem
 /** Inline editor for a chat message: click "Edit", change the text, save. */
 export function MessageEdit({ id, body }: { id: string; body: string }) {
   const [state, action, pending] = useActionState(editMessage, undefined)
+  useFormToast(state)
   return (
     <details className="mt-0.5 inline-block align-top">
       <summary className="cursor-pointer select-none text-xs text-neutral-400 hover:text-amber-700">Edit</summary>

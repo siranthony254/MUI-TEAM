@@ -4,6 +4,7 @@ import { useActionState } from 'react'
 import type { Transition } from '@/lib/tasks'
 import { inputClass } from '@/components/ui'
 import { changeStatus } from '../actions'
+import { useFormToast } from '@/components/Toaster'
 
 const TONE = {
   primary: 'bg-amber-500 text-[#0D1F35] hover:bg-amber-400',
@@ -13,6 +14,7 @@ const TONE = {
 
 export function StatusControls({ id, transitions }: { id: string; transitions: Transition[] }) {
   const [state, action, pending] = useActionState(changeStatus, undefined)
+  useFormToast(state)
   if (transitions.length === 0) return null
 
   const needsNote = transitions.some((t) => t.needsNote)

@@ -3,6 +3,7 @@
 import { useActionState } from 'react'
 import { buttonClass, inputClass } from '@/components/ui'
 import { addActionItem, recordDecision, saveMeetingOutcome } from '../actions'
+import { useFormToast } from '@/components/Toaster'
 
 interface Option { id: string; label: string }
 
@@ -24,6 +25,7 @@ export function OutcomeForm({
   attendees: { id: string; label: string; attended: boolean | null }[]
 }) {
   const [state, action, pending] = useActionState(saveMeetingOutcome, undefined)
+  useFormToast(state)
   return (
     <form action={action} className="space-y-3">
       <input type="hidden" name="id" value={id} />
@@ -55,6 +57,7 @@ export function OutcomeForm({
 
 export function DecisionForm({ meetingId }: { meetingId: string }) {
   const [state, action, pending] = useActionState(recordDecision, undefined)
+  useFormToast(state)
   return (
     <form action={action} className="space-y-3" key={state?.ok ? 'done' : 'open'}>
       <input type="hidden" name="meeting_id" value={meetingId} />
@@ -78,6 +81,7 @@ export function DecisionForm({ meetingId }: { meetingId: string }) {
 
 export function ActionItemForm({ meetingId, people }: { meetingId: string; people: Option[] }) {
   const [state, action, pending] = useActionState(addActionItem, undefined)
+  useFormToast(state)
   return (
     <form action={action} className="space-y-3" key={state?.ok ? 'done' : 'open'}>
       <input type="hidden" name="meeting_id" value={meetingId} />

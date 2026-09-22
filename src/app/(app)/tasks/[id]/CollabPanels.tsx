@@ -3,9 +3,11 @@
 import { useActionState, useEffect, useRef } from 'react'
 import { buttonClass, inputClass } from '@/components/ui'
 import { addComment, requestExtension } from '../collab-actions'
+import { useFormToast } from '@/components/Toaster'
 
 export function CommentForm({ taskId }: { taskId: string }) {
   const [state, action, pending] = useActionState(addComment, undefined)
+  useFormToast(state)
   const ref = useRef<HTMLFormElement>(null)
   useEffect(() => { if (state?.ok) ref.current?.reset() }, [state])
   return (
@@ -20,6 +22,7 @@ export function CommentForm({ taskId }: { taskId: string }) {
 
 export function ExtensionForm({ taskId }: { taskId: string }) {
   const [state, action, pending] = useActionState(requestExtension, undefined)
+  useFormToast(state)
   return (
     <form action={action} className="space-y-3">
       <input type="hidden" name="task_id" value={taskId} />

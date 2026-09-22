@@ -3,9 +3,11 @@
 import Link from 'next/link'
 import { useActionState } from 'react'
 import { signIn } from './actions'
+import { useFormToast } from '@/components/Toaster'
 
 export function LoginForm() {
   const [state, action, pending] = useActionState(signIn, undefined)
+  useFormToast(state)
   return (
     <form action={action} className="space-y-4">
       <label className="block text-sm font-medium text-neutral-700">

@@ -6,6 +6,7 @@ import { buttonClass, inputClass } from '@/components/ui'
 import { createClient } from '@/lib/supabase/client'
 import { RESOURCE_CATEGORIES } from '@/lib/types'
 import { addLinkResource, prepareUpload, saveFileResource } from './actions'
+import { useFormToast } from '@/components/Toaster'
 
 const MAX_MB = 25
 
@@ -93,6 +94,7 @@ export function UploadFileForm({ projectId }: { projectId?: string }) {
 
 export function AddLinkForm({ projectId }: { projectId?: string }) {
   const [state, action, pending] = useActionState(addLinkResource, undefined)
+  useFormToast(state)
   return (
     <form action={action} className="space-y-3" key={state?.ok ? 'done' : 'open'}>
       {projectId && <input type="hidden" name="project_id" value={projectId} />}

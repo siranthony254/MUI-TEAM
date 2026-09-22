@@ -5,6 +5,7 @@ import { buttonClass, inputClass } from '@/components/ui'
 import type { Group } from '@/lib/notify/groups'
 import { isOn, type Settings } from '@/lib/org-settings'
 import { saveSettings } from './actions'
+import { useFormToast } from '@/components/Toaster'
 
 function Check({ name, label, on, hint }: { name: string; label: string; on: boolean; hint?: string }) {
   return (
@@ -27,6 +28,7 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
 
 export function SettingsForm({ s, groups }: { s: Settings; groups: Group[] }) {
   const [state, action, pending] = useActionState(saveSettings, undefined)
+  useFormToast(state)
   const mandatory = s.mandatory_groups.split(',')
   return (
     <form action={action} className="space-y-4">

@@ -4,6 +4,7 @@ import { useActionState } from 'react'
 import { buttonClass, inputClass } from '@/components/ui'
 import type { TeamMember } from '@/lib/types'
 import { updateMember } from '../../actions'
+import { useFormToast } from '@/components/Toaster'
 
 interface Option { id: string; label: string }
 
@@ -11,6 +12,7 @@ export function EditMemberForm({
   member, departments, people, topRolesLocked,
 }: { member: TeamMember; departments: Option[]; people: Option[]; topRolesLocked: boolean }) {
   const [state, action, pending] = useActionState(updateMember, undefined)
+  useFormToast(state)
   return (
     <form action={action} className="space-y-4">
       <input type="hidden" name="id" value={member.id} />

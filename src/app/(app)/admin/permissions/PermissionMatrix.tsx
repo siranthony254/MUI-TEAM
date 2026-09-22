@@ -4,6 +4,7 @@ import { useActionState } from 'react'
 import { buttonClass } from '@/components/ui'
 import { CAPABILITIES, type EditableLevel, type Matrix } from '@/lib/capabilities'
 import { savePermissions } from './actions'
+import { useFormToast } from '@/components/Toaster'
 
 const LEVELS: { id: EditableLevel; label: string; hint: string }[] = [
   { id: 'executive', label: 'Executive', hint: 'incl. the Executive Director' },
@@ -13,6 +14,7 @@ const LEVELS: { id: EditableLevel; label: string; hint: string }[] = [
 
 export function PermissionMatrix({ matrix }: { matrix: Matrix }) {
   const [state, action, pending] = useActionState(savePermissions, undefined)
+  useFormToast(state)
   return (
     <form action={action}>
       <div className="overflow-x-auto">

@@ -3,12 +3,14 @@
 import { useActionState } from 'react'
 import { inputClass } from '@/components/ui'
 import { deleteMember } from '../../../manage-actions'
+import { useFormToast } from '@/components/Toaster'
 
 interface Option { id: string; label: string }
 
 /** Permanent removal of a person's account: the one control with no undo, so it asks for their name. */
 export function DeleteMemberForm({ member, heirs }: { member: { id: string; full_name: string }; heirs: Option[] }) {
   const [state, action, pending] = useActionState(deleteMember, undefined)
+  useFormToast(state)
   return (
     <form action={action} className="space-y-3">
       <input type="hidden" name="id" value={member.id} />
