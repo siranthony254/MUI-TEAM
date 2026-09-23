@@ -53,6 +53,7 @@ export default async function DepartmentsAdmin() {
               </form>
               <div className="mt-2 flex items-center gap-4">
                 <Link href={`/admin/departments/${d.id}/template`} className="text-xs font-medium text-amber-700 hover:underline">Report template</Link>
+                <Link href={`/departments/${d.id}#documents`} className="text-xs font-medium text-amber-700 hover:underline">Documents</Link>
                 <form action={deleteDepartment}>
                   <input type="hidden" name="id" value={d.id} />
                   <ConfirmButton message={`Delete the ${d.name} department? Its people and tasks stay but lose the department, and its chat channel and messages are deleted.`} className="text-xs text-red-600 hover:underline">Delete department</ConfirmButton>

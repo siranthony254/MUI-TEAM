@@ -13,6 +13,7 @@ import { ROLE_LABEL } from '@/lib/types'
 import { Nav } from '@/components/Nav'
 import { GuestGate } from '@/components/GuestGate'
 import { PageTransition } from '@/components/PageTransition'
+import { BadgeSync } from '@/components/BadgeSync'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const me = await requireMember()
@@ -44,6 +45,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="flex min-h-screen bg-[#F8F6F2] text-neutral-900 dark:bg-[#0B1420] dark:text-neutral-100">
       <Nav role={me.role} isDirector={me.is_director} showAnalytics={caps.view_analytics} showAdmin={scopes.size > 0} unread={unreadCount} chatUnread={chatUnread} orgName={shell.settings.org_name || 'MUI Team'} />
       <LiveSync memberId={me.id} />
+      <BadgeSync count={unreadCount + chatUnread} />
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center justify-between gap-3 border-b border-neutral-200/70 bg-white/85 px-4 py-3 backdrop-blur supports-[backdrop-filter]:sticky supports-[backdrop-filter]:top-0 supports-[backdrop-filter]:z-10 dark:border-white/10 dark:bg-[#0B1420]/85">
           <div className="flex min-w-0 items-center gap-3">

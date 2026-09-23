@@ -29,7 +29,7 @@ function CategoryAndVisibility() {
   )
 }
 
-export function UploadFileForm({ projectId }: { projectId?: string }) {
+export function UploadFileForm({ projectId, departmentId }: { projectId?: string; departmentId?: string }) {
   const router = useRouter()
   const formRef = useRef<HTMLFormElement>(null)
   const [busy, setBusy] = useState(false)
@@ -61,6 +61,7 @@ export function UploadFileForm({ projectId }: { projectId?: string }) {
         category: String(form.get('category') ?? ''),
         visibility: String(form.get('visibility') ?? 'everyone'),
         projectId,
+        departmentId,
       })
       if (res.error) throw new Error(res.error)
       setOk('Uploaded.')
@@ -92,12 +93,13 @@ export function UploadFileForm({ projectId }: { projectId?: string }) {
   )
 }
 
-export function AddLinkForm({ projectId }: { projectId?: string }) {
+export function AddLinkForm({ projectId, departmentId }: { projectId?: string; departmentId?: string }) {
   const [state, action, pending] = useActionState(addLinkResource, undefined)
   useFormToast(state)
   return (
     <form action={action} className="space-y-3" key={state?.ok ? 'done' : 'open'}>
       {projectId && <input type="hidden" name="project_id" value={projectId} />}
+      {departmentId && <input type="hidden" name="department_id" value={departmentId} />}
       <label className="block text-sm font-medium">Link (Google Drive, Notion, a website…)
         <input name="url" required placeholder="https://" className={inputClass} />
       </label>

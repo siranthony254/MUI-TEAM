@@ -1,12 +1,16 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { ExternalLink, FileText, FolderOpen } from 'lucide-react'
 import { requireMember, isExecOrAbove, hasOrgView } from '@/lib/auth'
 import { can } from '@/lib/permissions'
 import { createClient } from '@/lib/supabase/server'
 import { fmtDue, isOverdue } from '@/lib/tasks'
-import { monthRange } from '@/lib/time'
-import { ROLE_LABEL, type Project, type Report, type Task, type TeamMember } from '@/lib/types'
-import { Card, PageTitle, SectionTitle, StatusBadge } from '@/components/ui'
+import { fmtDay, monthRange } from '@/lib/time'
+import { ROLE_LABEL, type Project, type Report, type Resource, type Task, type TeamMember } from '@/lib/types'
+import { Card, PageTitle, SectionTitle, StatusBadge, EmptyState } from '@/components/ui'
+import { ManagePanel, ConfirmButton } from '@/components/ConfirmButton'
+import { AddLinkForm, UploadFileForm } from '../../resources/UploadForms'
+import { deleteResource } from '../../resources/actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -22,14 +26,16 @@ export default async function DepartmentPage({ params }: { params: Promise<{ id:
   if (!dept) notFound()
 
   const month = monthRange()
-  const [{ data: memberRows }, { data: loadRows }, { data: statRows }, { data: projectRows }, { data: channel }, { data: reportRows }] = await Promise.all([
+  const [{ data: memberRows }, { data: loadRows }, { data: statRows }, { data: projectRows }, { data: channel }, { data: reportRows }, { data: docRows }] = await Promise.all([
     supabase.from('team_members').select('*').eq('department_id', id).eq('active', true).order('full_name'),
     supabase.rpc('department_member_load', { did: id }),
     supabase.rpc('department_stats_all'),
     supabase.from('projects').select('id, name, status, due_date').eq('department_id', id).neq('status', 'done'),
     supabase.from('channels').select('id').eq('department_id', id).eq('kind', 'department').maybeSingle(),
     supabase.from('reports').select('id, status, author_id, kind').eq('department_id', id).eq('kind', 'department').gte('period_start', month.start).lte('period_start', month.end),
+    supabase.from('resources').select('*').eq('department_id', id).order('created_at', { ascending: false }),
   ])
+  const docs = (docRows ?? []) as Resource[]
 
   const members = (memberRows ?? []) as TeamMember[]
   const load = (loadRows ?? []) as Load[]
@@ -53,6 +59,8 @@ export default async function DepartmentPage({ params }: { params: Promise<{ id:
   const loadOf = (mid: string) => load.find((l) => l.member_id === mid)
   const deptReport = ((reportRows ?? []) as Pick<Report, 'id' | 'status' | 'author_id'>[]).find((r) => r.status === 'submitted') ?? (reportRows ?? [])[0]
   const canAssign = await can(me, 'assign_tasks')
+  const canManageDocs = await can(me, 'add_resource')
+  const sizeOf = (b: number | null) => (b === null ? '' : b < 1024 * 1024 ? `${Math.max(1, Math.round(b / 1024))} KB` : `${(b / 1024 / 1024).toFixed(1)} MB`)
 
   return (
     <>
@@ -118,6 +126,50 @@ export default async function DepartmentPage({ params }: { params: Promise<{ id:
             ))}
           </div>
         </>
+      )}
+
+      <div id="documents" className="mt-6 scroll-mt-20" />
+      <SectionTitle icon={FolderOpen}>Documents &amp; templates</SectionTitle>
+      {docs.length === 0 ? (
+        <Card><EmptyState icon={FolderOpen} label="Nothing here yet." hint="Planners, guides, checklists — anything specific to this department's work." /></Card>
+      ) : (
+        <div className="space-y-2">
+          {docs.map((d) => {
+            const isLink = d.kind === 'link'
+            return (
+              <Card key={d.id} className="flex items-center gap-3">
+                {isLink ? <ExternalLink size={18} className="shrink-0 text-amber-600" aria-hidden /> : <FileText size={18} className="shrink-0 text-amber-600" aria-hidden />}
+                <a href={isLink ? d.url! : `/resources/${d.id}/download`} target={isLink ? '_blank' : undefined} rel={isLink ? 'noopener noreferrer' : undefined}
+                  className="min-w-0 flex-1 hover:underline">
+                  <span className="block truncate font-medium">{d.title}</span>
+                  <span className="block text-xs text-neutral-500">
+                    {d.category}{d.size_bytes ? ` · ${sizeOf(d.size_bytes)}` : ''} · added {fmtDay(d.created_at)}
+                  </span>
+                </a>
+                {(canManageDocs && d.uploaded_by === me.id) || me.role === 'super_admin' ? (
+                  <form action={deleteResource}>
+                    <input type="hidden" name="id" value={d.id} />
+                    <ConfirmButton message={`Remove "${d.title}" from ${dept.name}'s documents?`} className="shrink-0 text-xs text-neutral-400 hover:text-red-600">Remove</ConfirmButton>
+                  </form>
+                ) : null}
+              </Card>
+            )
+          })}
+        </div>
+      )}
+      {canManageDocs && (
+        <ManagePanel label="Add a document">
+          <div className="grid gap-6 sm:grid-cols-2">
+            <div>
+              <p className="mb-2 text-sm font-semibold">Upload a file</p>
+              <UploadFileForm departmentId={id} />
+            </div>
+            <div>
+              <p className="mb-2 text-sm font-semibold">Add a link</p>
+              <AddLinkForm departmentId={id} />
+            </div>
+          </div>
+        </ManagePanel>
       )}
 
       {detailed && tasks.length > 0 && (

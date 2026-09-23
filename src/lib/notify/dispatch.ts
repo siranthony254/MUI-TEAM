@@ -68,6 +68,8 @@ export async function runDispatch(): Promise<DispatchResult> {
     await admin.rpc('expire_admin_delegations')
     await admin.rpc('publish_due_announcements')
     await admin.rpc('generate_meeting_reminders')
+    // Anything still unread keeps pushing again for a while instead of firing once and going quiet.
+    await admin.rpc('renotify_unread')
     const { data: reminderCount } = await admin.rpc('generate_task_reminders')
     reminders = (reminderCount as number | null) ?? 0
     const result = await dispatchPending()

@@ -223,6 +223,7 @@ export interface Resource {
   uploaded_by: string | null
   created_at: string
   project_id: string | null
+  department_id: string | null
 }
 
 export interface Attachment {

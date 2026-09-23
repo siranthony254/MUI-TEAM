@@ -33,7 +33,7 @@ export async function prepareUpload(fileName: string, size: number): Promise<{ p
 export async function saveFileResource(
   input: {
     path: string; fileName: string; mime: string; size: number
-    title: string; description: string; category: string; visibility: string; projectId?: string | null
+    title: string; description: string; category: string; visibility: string; projectId?: string | null; departmentId?: string | null
   },
 ): Promise<ResourceState> {
   const me = await requireMember()
@@ -47,13 +47,14 @@ export async function saveFileResource(
     title, description: input.description.trim() || null, category: input.category, kind: 'file',
     storage_path: input.path, file_name: input.fileName, mime_type: input.mime || null, size_bytes: input.size,
     visibility: input.visibility === 'executive' ? 'executive' : 'everyone', uploaded_by: me.id,
-    project_id: input.projectId || null,
+    project_id: input.projectId || null, department_id: input.departmentId || null,
   })
   if (error) {
     await createAdminClient().storage.from('resources').remove([input.path]) // don't orphan the file
     return { error: error.message }
   }
   revalidatePath('/resources')
+  if (input.departmentId) revalidatePath(`/departments/${input.departmentId}`)
   return { ok: 'Uploaded.' }
 }
 
@@ -73,12 +74,14 @@ export async function addLinkResource(_prev: ResourceState | undefined, fd: Form
   const { error } = await supabase.from('resources').insert({
     title, description: String(fd.get('description') ?? '').trim() || null, category, kind: 'link', url,
     visibility: fd.get('visibility') === 'executive' ? 'executive' : 'everyone', uploaded_by: me.id,
-    project_id: String(fd.get('project_id') ?? '') || null,
+    project_id: String(fd.get('project_id') ?? '') || null, department_id: String(fd.get('department_id') ?? '') || null,
   })
   if (error) return { error: error.message }
   revalidatePath('/resources')
   const pid = String(fd.get('project_id') ?? '')
   if (pid) revalidatePath(`/projects/${pid}`)
+  const did = String(fd.get('department_id') ?? '')
+  if (did) revalidatePath(`/departments/${did}`)
   return { ok: 'Link added.' }
 }
 
