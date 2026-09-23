@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { MessageCircleQuestion, Send, X, ThumbsDown } from 'lucide-react'
 import { askAssistant, flagUnanswered } from '@/app/(app)/assistant-actions'
 import type { ChatTurn } from '@/lib/assistant/gemini'
@@ -14,6 +15,7 @@ const GREETING: Msg = {
 }
 
 export function AskMui({ enabled }: { enabled: boolean }) {
+  const pathname = usePathname()
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState<Msg[]>([GREETING])
   const [input, setInput] = useState('')
@@ -50,7 +52,9 @@ export function AskMui({ enabled }: { enabled: boolean }) {
     await flagUnanswered(question).catch(() => {})
   }
 
-  if (!enabled) return null
+  // Hidden on an open chat conversation — its own Send button sits right where this floats,
+  // and the page is already a chat surface, so a second floating chat bubble there just confuses.
+  if (!enabled || /^\/chat\/[^/]+/.test(pathname ?? '')) return null
 
   return (
     <>
