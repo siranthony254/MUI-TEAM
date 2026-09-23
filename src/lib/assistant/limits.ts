@@ -1,10 +1,11 @@
 import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
 
-// Gemini's free tier is 250 requests/day for the whole app, shared by everyone. These stay well
-// under that with room to spare, and share it fairly rather than letting one person use it all up.
-const PER_PERSON_DAILY = 15
-const APP_WIDE_DAILY = 180
+// gemini-3.6-flash's free tier is roughly 20 requests/day for the whole app (shared by everyone,
+// not per person) — much tighter than older models. Kept just under that, and capped per person
+// so one heavy user can't use up the whole team's daily budget by themselves.
+const PER_PERSON_DAILY = 4
+const APP_WIDE_DAILY = 18
 
 export interface LimitCheck { ok: boolean; reason?: string }
 
