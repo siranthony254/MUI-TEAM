@@ -57,7 +57,7 @@ export default async function EpisodePage({ params }: { params: Promise<{ id: st
           <div><dt className="text-neutral-500">Publishes</dt><dd className="font-medium">{ep.publish_on ? fmtDay(ep.publish_on) : '—'}</dd></div>
         </dl>
         {project && <p className="mt-3 text-sm text-neutral-600">Project: <Link href={`/projects/${project.id}`} className="font-medium text-amber-700 hover:underline">{project.name}</Link></p>}
-        {ep.guest_notes && <p className="mt-3 whitespace-pre-wrap rounded-lg bg-neutral-50 p-3 text-sm"><strong>Guest notes:</strong> {ep.guest_notes}</p>}
+        {ep.guest_notes && <p className="mt-3 whitespace-pre-wrap rounded-lg bg-neutral-50 p-3 text-sm text-neutral-800 dark:bg-white/5 dark:text-neutral-200"><strong>Guest notes:</strong> {ep.guest_notes}</p>}
       </Card>
 
       <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
@@ -109,7 +109,7 @@ export default async function EpisodePage({ params }: { params: Promise<{ id: st
       )}
 
       {isExecOrAbove(me) && (
-        <details className="mt-6 rounded-xl border border-neutral-200 bg-white p-4">
+        <details className="mt-6 rounded-xl border border-neutral-200 bg-white p-4 dark:border-white/10 dark:bg-[#101C2C]">
           <summary className="cursor-pointer text-sm font-semibold">Edit episode details</summary>
           <div className="mt-4"><EditEpisodeForm episode={ep} /></div>
           {(ep.created_by === me.id || me.role === 'super_admin' || me.is_director) && (

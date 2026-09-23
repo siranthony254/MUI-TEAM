@@ -41,7 +41,7 @@ export default async function People({
 
       <form className="mb-4 flex flex-wrap items-end gap-2">
         <input name="q" defaultValue={sp.q} placeholder="Search name, title, department…" aria-label="Search people"
-          className="min-w-[200px] flex-1 rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-500" />
+          className="min-w-[200px] flex-1 rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 outline-none focus:ring-2 focus:ring-amber-500 dark:border-white/15 dark:bg-[#0B1420] dark:text-neutral-100" />
         <select name="department" defaultValue={sp.department ?? ''} className={sel} aria-label="Department">
           <option value="">All departments</option>
           {(departments ?? []).map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
@@ -65,7 +65,7 @@ export default async function People({
             <option value="all">All</option>
           </select>
         )}
-        <button className="rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm font-medium hover:bg-neutral-50">Filter</button>
+        <button className="rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50 dark:border-white/15 dark:bg-[#0B1420] dark:text-neutral-200 dark:hover:bg-white/10">Filter</button>
       </form>
 
       <p className="mb-3 text-xs text-neutral-500">{members.length} {members.length === 1 ? 'person' : 'people'}</p>

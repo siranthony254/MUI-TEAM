@@ -15,7 +15,7 @@ export function CopyLink() {
       onClick={async () => {
         try { await navigator.clipboard.writeText(window.location.href); setCopied(true); setTimeout(() => setCopied(false), 2000) } catch { /* clipboard blocked */ }
       }}
-      className="rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold hover:bg-neutral-50">
+      className="rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 dark:border-white/15 dark:bg-[#0B1420] dark:text-neutral-200 dark:hover:bg-white/10">
       {copied ? 'Link copied' : 'Copy link'}
     </button>
   )

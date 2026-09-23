@@ -18,7 +18,7 @@ function Check({ name, label, on, hint }: { name: string; label: string; on: boo
 
 function Section({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
   return (
-    <fieldset className="rounded-xl border border-neutral-200 bg-white p-4">
+    <fieldset className="rounded-xl border border-neutral-200 bg-white p-4 dark:border-white/10 dark:bg-[#101C2C]">
       <legend className="px-1 text-sm font-semibold uppercase tracking-wide text-neutral-500">{title}</legend>
       {hint && <p className="mb-3 text-sm text-neutral-600">{hint}</p>}
       <div className="space-y-3">{children}</div>

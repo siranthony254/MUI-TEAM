@@ -87,7 +87,7 @@ export default async function TaskPage({
             <span className="text-purple-700">· by {nameOf(task.delegated_by)}, {fmtDay(task.delegated_at)}</span>
           </p>
         )}
-        {task.delegation_note && <p className="mt-2 whitespace-pre-wrap rounded-lg bg-neutral-50 p-3 text-sm"><strong>Instructions:</strong> {task.delegation_note}</p>}
+        {task.delegation_note && <p className="mt-2 whitespace-pre-wrap rounded-lg bg-neutral-50 p-3 text-sm text-neutral-800 dark:bg-white/5 dark:text-neutral-200"><strong>Instructions:</strong> {task.delegation_note}</p>}
 
         {task.description && <p className="mt-4 whitespace-pre-wrap text-sm">{task.description}</p>}
 
@@ -114,7 +114,7 @@ export default async function TaskPage({
           <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-800"><strong>Revision requested:</strong> {task.review_note}</p>
         )}
         {task.evidence_note && (
-          <p className="mt-4 rounded-lg bg-neutral-50 p-3 text-sm"><strong>Submission note:</strong> {task.evidence_note}</p>
+          <p className="mt-4 rounded-lg bg-neutral-50 p-3 text-sm text-neutral-800 dark:bg-white/5 dark:text-neutral-200"><strong>Submission note:</strong> {task.evidence_note}</p>
         )}
       </Card>
 
@@ -174,10 +174,10 @@ export default async function TaskPage({
               {isReviewer && (
                 <form action={decideExtension} className="mt-3 space-y-2">
                   <input type="hidden" name="id" value={pendingExt.id} />
-                  <input name="note" placeholder="Optional note to them" className="w-full rounded-lg border border-amber-300 bg-white px-3 py-2 text-sm" />
+                  <input name="note" placeholder="Optional note to them" className="w-full rounded-lg border border-amber-300 bg-white px-3 py-2 text-sm text-neutral-900 dark:border-amber-500/30 dark:bg-[#0B1420] dark:text-neutral-100" />
                   <div className="flex gap-2">
                     <button name="decision" value="approve" className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-[#0D1F35] hover:bg-amber-400">Approve</button>
-                    <button name="decision" value="deny" className="rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold hover:bg-neutral-50">Decline</button>
+                    <button name="decision" value="deny" className="rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 dark:border-white/15 dark:bg-[#0B1420] dark:text-neutral-200 dark:hover:bg-white/10">Decline</button>
                   </div>
                 </form>
               )}
@@ -196,7 +196,7 @@ export default async function TaskPage({
       )}
 
       {canHandOn && (
-        <details className="mt-4 rounded-xl border border-neutral-200 bg-white p-4">
+        <details className="mt-4 rounded-xl border border-neutral-200 bg-white p-4 dark:border-white/10 dark:bg-[#101C2C]">
           <summary className="cursor-pointer text-sm font-semibold">{delegating ? 'Delegate this task' : 'Reassign this task'}</summary>
           <div className="mt-4">
             <HandOnForm

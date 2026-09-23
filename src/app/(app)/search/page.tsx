@@ -65,7 +65,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
 
       <form className="mb-6 flex gap-2">
         <input name="q" defaultValue={raw} autoFocus placeholder="Search everything you have access to…" aria-label="Search"
-          className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-amber-500" />
+          className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2.5 text-sm text-neutral-900 outline-none focus:ring-2 focus:ring-amber-500 dark:border-white/15 dark:bg-[#0B1420] dark:text-neutral-100" />
         <button className="rounded-lg bg-amber-500 px-5 text-sm font-semibold text-[#0D1F35] hover:bg-amber-400">Search</button>
       </form>
 

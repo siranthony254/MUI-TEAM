@@ -125,8 +125,8 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
       </div>
 
       {/* Month grid (larger screens) */}
-      <div className="hidden overflow-hidden rounded-xl border border-neutral-200 bg-white md:block">
-        <div className="grid grid-cols-7 border-b border-neutral-200 bg-neutral-50 text-center text-xs font-medium text-neutral-500">
+      <div className="hidden overflow-hidden rounded-xl border border-neutral-200 bg-white md:block dark:border-white/10 dark:bg-[#101C2C]">
+        <div className="grid grid-cols-7 border-b border-neutral-200 bg-neutral-50 text-center text-xs font-medium text-neutral-500 dark:border-white/10 dark:bg-white/5">
           {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d) => <div key={d} className="py-2">{d}</div>)}
         </div>
         <div className="grid grid-cols-7">

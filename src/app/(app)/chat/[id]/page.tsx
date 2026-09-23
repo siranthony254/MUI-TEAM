@@ -61,7 +61,7 @@ export default async function ChannelPage({ params }: { params: Promise<{ id: st
 
   return (
     <div className="-mx-4 -my-6 flex h-[calc(100dvh-8.5rem)] flex-col md:-my-6 md:h-[calc(100dvh-4.5rem)]">
-      <div className="flex items-center gap-3 border-b border-neutral-200 bg-white px-4 py-3">
+      <div className="flex items-center gap-3 border-b border-neutral-200 bg-white px-4 py-3 dark:border-white/10 dark:bg-[#101C2C]">
         <Link href="/chat" className="text-sm text-neutral-500 hover:underline">←</Link>
         <div>
           {dmPartner ? (
@@ -127,7 +127,7 @@ export default async function ChannelPage({ params }: { params: Promise<{ id: st
                     <ul className="mt-1 flex flex-wrap gap-2">
                       {attachmentsOf(m.id).map((a) => (
                         <li key={a.id}>
-                          <a href={`/attachments/${a.id}/download`} className="inline-flex items-center gap-1 rounded-full border border-neutral-200 bg-white px-3 py-1 text-xs hover:border-amber-400">
+                          <a href={`/attachments/${a.id}/download`} className="inline-flex items-center gap-1 rounded-full border border-neutral-200 bg-white px-3 py-1 text-xs text-neutral-700 hover:border-amber-400 dark:border-white/15 dark:bg-[#0B1420] dark:text-neutral-200">
                             <Paperclip size={12} aria-hidden /> {a.file_name ?? 'file'}
                           </a>
                         </li>

@@ -20,7 +20,7 @@ export function ConfirmButton({
 /** Collapsible panel for edit forms, so the page stays quiet until someone wants to change something. */
 export function ManagePanel({ label = 'Edit', children }: { label?: string; children: React.ReactNode }) {
   return (
-    <details className="group mt-3 rounded-lg border border-neutral-200 bg-neutral-50 open:bg-white">
+    <details className="group mt-3 rounded-lg border border-neutral-200 bg-neutral-50 open:bg-white dark:border-white/10 dark:bg-white/5 dark:open:bg-[#101C2C]">
       <summary className="cursor-pointer select-none px-3 py-2 text-sm font-medium text-[#0D1F35] hover:text-amber-700">{label}</summary>
       <div className="border-t border-neutral-200 p-3">{children}</div>
     </details>

@@ -102,7 +102,7 @@ export default async function ProjectPage({
             <p className="mt-3 text-xs text-neutral-400">Progress is weighted by each task&apos;s weight (default 1), across all of the project&apos;s tasks.</p>
           </Card>
           {exec && (
-            <details className="mt-4 rounded-xl border border-neutral-200 bg-white p-4">
+            <details className="mt-4 rounded-xl border border-neutral-200 bg-white p-4 dark:border-white/10 dark:bg-[#101C2C]">
               <summary className="cursor-pointer text-sm font-semibold">Edit project</summary>
               <div className="mt-4">
                 <ProjectEditForm
@@ -164,7 +164,7 @@ export default async function ProjectPage({
               <SectionTitle icon={UserPlus}>Add a member</SectionTitle>
               <form action={addProjectMember} className="flex gap-2">
                 <input type="hidden" name="project_id" value={id} />
-                <select name="member_id" required defaultValue="" className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm">
+                <select name="member_id" required defaultValue="" className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 dark:border-white/15 dark:bg-[#0B1420] dark:text-neutral-100">
                   <option value="" disabled>Choose a person</option>
                   {members.filter((m) => !teamIds.includes(m.id)).map((m) => <option key={m.id} value={m.id}>{m.full_name}</option>)}
                 </select>
@@ -227,7 +227,7 @@ async function TasksTab({
         <select name="priority" defaultValue={sp.priority ?? ''} className={sel} aria-label="Priority"><option value="">Any priority</option>{['urgent', 'high', 'normal', 'low'].map((s) => <option key={s} value={s}>{s}</option>)}</select>
         <select name="department" defaultValue={sp.department ?? ''} className={sel} aria-label="Department"><option value="">Any department</option>{departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}</select>
         <select name="due" defaultValue={sp.due ?? ''} className={sel} aria-label="Deadline"><option value="">Any deadline</option><option value="overdue">Overdue</option><option value="week">Due this week</option></select>
-        <button className="rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium hover:bg-neutral-50">Filter</button>
+        <button className="rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50 dark:border-white/15 dark:bg-[#0B1420] dark:text-neutral-200 dark:hover:bg-white/10">Filter</button>
       </form>
       <p className="mb-2 text-xs text-neutral-500">Showing the tasks you&apos;re allowed to see{meId ? '' : ''}.</p>
       {tasks.length === 0 ? <Card><p className="text-sm text-neutral-600">No tasks match.</p></Card> : (

@@ -8,6 +8,7 @@ import { fmtDateTime, nairobiHour } from '@/lib/time'
 import { Card, PageTitle, StatusBadge, EmptyState, StatTile, ProgressRing } from '@/components/ui'
 import { markOnboardingDone } from './home-actions'
 import { InstallBanner } from '@/components/pwa/InstallApp'
+import { PushBanner } from '@/components/pwa/PushBanner'
 
 export const dynamic = 'force-dynamic'
 
@@ -99,6 +100,7 @@ export default async function Dashboard() {
         {(open.length > 0 || completedThisWeek > 0) && <ProgressRing value={momentum} label="this week" />}
       </div>
 
+      <PushBanner />
       <div className="mb-4"><InstallBanner /></div>
 
       {me.is_director && (
@@ -108,7 +110,7 @@ export default async function Dashboard() {
       )}
 
       {(latestAnn ?? []).length > 0 && (
-        <Link href="/announcements" className="mb-4 block rounded-xl border border-neutral-200 bg-white p-4 transition hover:border-amber-400">
+        <Link href="/announcements" className="mb-4 block rounded-xl border border-neutral-200 bg-white p-4 transition hover:border-amber-400 dark:border-white/10 dark:bg-[#101C2C]">
           <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">Official announcement</p>
           <p className="mt-0.5 font-semibold text-[#0D1F35]">{latestAnn![0].title}</p>
           <p className="mt-1 line-clamp-2 text-sm text-neutral-600">{latestAnn![0].body}</p>
@@ -151,7 +153,7 @@ export default async function Dashboard() {
       </div>
 
       {(delegatedOut ?? 0) > 0 && (
-        <Link href="/tasks?filter=delegated" className="mt-4 flex items-center gap-2 rounded-xl border border-neutral-200 bg-white p-4 text-sm text-neutral-700 shadow-sm shadow-neutral-900/[0.04] transition-transform duration-150 hover:-translate-y-0.5 hover:shadow-md">
+        <Link href="/tasks?filter=delegated" className="mt-4 flex items-center gap-2 rounded-xl border border-neutral-200 bg-white p-4 text-sm text-neutral-700 shadow-sm shadow-neutral-900/[0.04] transition-transform duration-150 hover:-translate-y-0.5 hover:shadow-md dark:border-white/10 dark:bg-[#101C2C] dark:text-neutral-300">
           <Send size={16} className="shrink-0 text-neutral-400" aria-hidden />
           <span><strong>{delegatedOut}</strong> delegated {delegatedOut === 1 ? 'task is' : 'tasks are'} awaiting others</span>
           <ArrowUpRight size={14} className="ml-auto shrink-0 text-neutral-400" aria-hidden />

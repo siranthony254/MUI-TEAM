@@ -69,7 +69,7 @@ export default async function Chat() {
           })}
           <form action={startDm} className="flex gap-2">
             <select name="member_id" required defaultValue="" aria-label="Start a private message"
-              className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm">
+              className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 dark:border-white/15 dark:bg-[#0B1420] dark:text-neutral-100">
               <option value="" disabled>Message someone…</option>
               {(people ?? []).map((p) => <option key={p.id} value={p.id}>{p.full_name}</option>)}
             </select>
@@ -104,7 +104,7 @@ export default async function Chat() {
       })}
 
       {(await can(me, 'create_group_chat')) && (
-        <details className="rounded-xl border border-neutral-200 bg-white p-4">
+        <details className="rounded-xl border border-neutral-200 bg-white p-4 dark:border-white/10 dark:bg-[#101C2C]">
           <summary className="cursor-pointer text-sm font-semibold">Start a group chat</summary>
           <div className="mt-4">
             <NewGroupForm people={(people ?? []).map((p) => ({ id: p.id, label: p.full_name }))} />

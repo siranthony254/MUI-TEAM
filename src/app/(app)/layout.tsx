@@ -60,7 +60,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </div>
           <div className="flex items-center gap-2">
             {me.role !== 'guest' && <Link href="/search" aria-label="Search" className="rounded-lg p-2 text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-white/10"><Search size={18} aria-hidden /></Link>}
-            {quickItems.length > 0 && <QuickAdd items={quickItems} />}
+            {quickItems.length > 0 && <div className="hidden sm:block"><QuickAdd items={quickItems} /></div>}
             <Link href="/account" className="hidden rounded-lg px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-white/10 sm:block">Account</Link>
             <form action={signOut}>
               <button className="rounded-lg px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-white/10">Sign out</button>

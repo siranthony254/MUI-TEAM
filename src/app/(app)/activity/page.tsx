@@ -79,7 +79,7 @@ export default async function Activity({
           <option value="">All projects</option>
           {(projects ?? []).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
-        <button className="rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm font-medium hover:bg-neutral-50">Filter</button>
+        <button className="rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50 dark:border-white/15 dark:bg-[#0B1420] dark:text-neutral-200 dark:hover:bg-white/10">Filter</button>
       </form>
 
       {shown.length === 0 ? <Card><p className="text-sm text-neutral-600">No activity matches.</p></Card> : (

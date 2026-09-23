@@ -62,7 +62,7 @@ export function NewEpisodeForm({ projects, people, template }: { projects: Optio
                   <td className="p-2">{it.title} <span className="text-xs text-neutral-400">· {EPISODE_STAGE_LABEL[it.stage]}</span></td>
                   <td className="p-2 text-xs text-neutral-500">{it.offset_days === 0 ? 'Recording day' : it.offset_days < 0 ? `${-it.offset_days}d before` : `${it.offset_days}d after`}</td>
                   <td className="p-2">
-                    <select name={`assignee.${it.id}`} defaultValue="" aria-label={`Owner of ${it.title}`} className="w-full rounded border border-neutral-300 bg-white px-2 py-1 text-xs">
+                    <select name={`assignee.${it.id}`} defaultValue="" aria-label={`Owner of ${it.title}`} className="w-full rounded border border-neutral-300 bg-white px-2 py-1 text-xs text-neutral-900 dark:border-white/15 dark:bg-[#0B1420] dark:text-neutral-100">
                       <option value="">Me</option>
                       {people.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
                     </select>

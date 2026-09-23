@@ -94,7 +94,7 @@ export default async function Conversations({ searchParams }: { searchParams: Pr
             />
           </Card>
 
-          <details className="mt-4 rounded-xl border border-neutral-200 bg-white p-4">
+          <details className="mt-4 rounded-xl border border-neutral-200 bg-white p-4 dark:border-white/10 dark:bg-[#101C2C]">
             <summary className="cursor-pointer text-sm font-semibold">Edit the standard checklist ({items.length} steps)</summary>
             <ul className="mt-3 divide-y divide-neutral-100 text-sm">
               {items.map((i) => (

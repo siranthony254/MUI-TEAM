@@ -44,7 +44,7 @@ function Fields({
         <div className="flex flex-wrap gap-2">
           {ACCESS_PRESETS.map((p) => (
             <button key={p.id} type="button" onClick={() => applyPreset(p.id)} title={p.hint}
-              className="rounded-full border border-neutral-300 bg-white px-3 py-1 text-sm hover:border-amber-400">{p.label}</button>
+              className="rounded-full border border-neutral-300 bg-white px-3 py-1 text-sm text-neutral-700 hover:border-amber-400 dark:border-white/15 dark:bg-[#0B1420] dark:text-neutral-200 dark:hover:bg-white/10">{p.label}</button>
           ))}
         </div>
         <p className="mt-1 text-xs text-neutral-500">Presets just fill in the choices below; you can change anything before saving.</p>
@@ -60,7 +60,7 @@ function Fields({
                 <span className="block text-xs text-neutral-500">{c.hint}</span>
               </span>
               <select name={`cap.${c.id}`} value={caps[c.id]} onChange={(e) => setCaps((p) => ({ ...p, [c.id]: e.target.value as Choice }))}
-                aria-label={c.label} className="rounded-lg border border-neutral-300 bg-white px-2 py-1 text-sm">
+                aria-label={c.label} className="rounded-lg border border-neutral-300 bg-white px-2 py-1 text-sm text-neutral-900 dark:border-white/15 dark:bg-[#0B1420] dark:text-neutral-100">
                 <option value="default">Follow their level{defaults ? ` (${defaults[c.id] ? 'yes' : 'no'})` : ''}</option>
                 <option value="allow">Always allow</option>
                 <option value="deny">Never allow</option>

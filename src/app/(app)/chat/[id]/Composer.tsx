@@ -91,9 +91,9 @@ export function Composer({ channelId, labels }: { channelId: string; labels: str
     : refHits.map((r) => ({ key: `r-${r.id}`, text: `#${r.label}`, sub: r.type, onPick: () => pickRef(r) }))
 
   return (
-    <div className="relative border-t border-neutral-200 bg-white p-3">
+    <div className="relative border-t border-neutral-200 bg-white p-3 dark:border-white/10 dark:bg-[#101C2C]">
       {suggestions.length > 0 && (
-        <ul role="listbox" className="absolute bottom-full left-3 mb-1 w-72 overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-lg">
+        <ul role="listbox" className="absolute bottom-full left-3 mb-1 w-72 overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-lg dark:border-white/10 dark:bg-[#101C2C]">
           {suggestions.map((s) => (
             <li key={s.key}>
               <button type="button" role="option" aria-selected={false} onMouseDown={(e) => { e.preventDefault(); s.onPick() }}
