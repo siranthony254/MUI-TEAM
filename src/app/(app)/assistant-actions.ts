@@ -7,8 +7,9 @@ import { assistantEnabled, askGemini, type ChatTurn } from '@/lib/assistant/gemi
 import { MUI_MANUAL } from '@/lib/assistant/prompt'
 import { buildPersonContext } from '@/lib/assistant/context'
 import { claimAssistantUse } from '@/lib/assistant/limits'
+import { extractProposal, type Proposal } from '@/lib/assistant/proposals'
 
-export interface AskResult { reply?: string; error?: string }
+export interface AskResult { reply?: string; error?: string; proposal?: Proposal }
 
 /** One turn of a conversation with Ask MUI. history is the conversation so far, oldest first. */
 export async function askAssistant(message: string, history: ChatTurn[]): Promise<AskResult> {
@@ -26,12 +27,21 @@ export async function askAssistant(message: string, history: ChatTurn[]): Promis
   const system = `${MUI_MANUAL}\n\n${personContext}`
 
   try {
-    const reply = await askGemini(system, [...history.slice(-12), { role: 'user', text: trimmed }])
-    return { reply }
+    const raw = await askGemini(system, [...history.slice(-12), { role: 'user', text: trimmed }])
+    const { text, proposal } = extractProposal(raw)
+    return { reply: text, proposal: proposal ?? undefined }
   } catch (err) {
     console.error('[assistant] askGemini failed:', err)
     return { error: "Couldn't reach the assistant just now — try again in a moment." }
   }
+}
+
+/** For the task-proposal card's assignee picker — the same directory anyone can already browse under People. */
+export async function listActiveMembers(): Promise<{ id: string; label: string }[]> {
+  await requireMember()
+  const supabase = await createClient()
+  const { data } = await supabase.from('team_members').select('id, full_name').eq('active', true).order('full_name')
+  return (data ?? []).map((m) => ({ id: m.id, label: m.full_name }))
 }
 
 /** "This wasn't helpful" — queues the question for a director to answer, which is how the assistant learns. */

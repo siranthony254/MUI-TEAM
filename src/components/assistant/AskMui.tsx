@@ -5,8 +5,10 @@ import { usePathname } from 'next/navigation'
 import { MessageCircleQuestion, Send, X, ThumbsDown } from 'lucide-react'
 import { askAssistant, flagUnanswered } from '@/app/(app)/assistant-actions'
 import type { ChatTurn } from '@/lib/assistant/gemini'
+import type { Proposal } from '@/lib/assistant/proposals'
+import { ProposalCard } from './ProposalCard'
 
-interface Msg extends ChatTurn { id: number; error?: boolean; flagged?: boolean }
+interface Msg extends ChatTurn { id: number; error?: boolean; flagged?: boolean; proposal?: Proposal }
 let seq = 0
 
 const GREETING: Msg = {
@@ -36,7 +38,7 @@ export function AskMui({ enabled }: { enabled: boolean }) {
     try {
       const history = [...messages, mine].filter((m) => m.id !== -1 && !m.error).map((m) => ({ role: m.role, text: m.text }))
       const res = await askAssistant(text, history.slice(0, -1))
-      setMessages((m) => [...m, { id: ++seq, role: 'model', text: res.reply ?? res.error ?? 'Something went wrong.', error: !res.reply }])
+      setMessages((m) => [...m, { id: ++seq, role: 'model', text: res.reply ?? res.error ?? 'Something went wrong.', error: !res.reply, proposal: res.proposal }])
     } catch {
       setMessages((m) => [...m, { id: ++seq, role: 'model', text: "Couldn't reach the assistant just now — try again in a moment.", error: true }])
     } finally {
@@ -75,7 +77,7 @@ export function AskMui({ enabled }: { enabled: boolean }) {
 
           <div className="flex-1 space-y-3 overflow-y-auto p-3">
             {messages.map((m) => (
-              <div key={m.id} className={m.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
+              <div key={m.id} className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'}`}>
                 <div className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap ${
                   m.role === 'user'
                     ? 'bg-amber-500 text-[#0D1F35]'
@@ -94,6 +96,9 @@ export function AskMui({ enabled }: { enabled: boolean }) {
                     )
                   )}
                 </div>
+                {m.proposal && (
+                  <ProposalCard proposal={m.proposal} onDone={() => setMessages((cur) => cur.map((x) => (x.id === m.id ? { ...x, proposal: undefined } : x)))} />
+                )}
               </div>
             ))}
             {busy && <div className="flex justify-start"><div className="rounded-2xl bg-neutral-100 px-3 py-2 text-sm text-neutral-500 dark:bg-white/10 dark:text-neutral-400">Thinking…</div></div>}
