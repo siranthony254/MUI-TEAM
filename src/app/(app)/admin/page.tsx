@@ -85,6 +85,7 @@ export default async function AdminHome() {
         {has('admin.onboarding') && <Link href="/admin/onboarding"><Card className="h-full transition hover:border-amber-400"><p className="font-semibold">Onboarding</p><p className="mt-0.5 text-xs text-neutral-500">Welcome message and the checklist new members get.</p></Card></Link>}
         {canCampaign && <Link href="/admin/campaigns"><Card className="h-full transition hover:border-amber-400"><p className="font-semibold">Campaigns</p><p className="mt-0.5 text-xs text-neutral-500">Send a message to part of the team.</p></Card></Link>}
         {canAnalytics && <Link href="/analytics"><Card className="h-full transition hover:border-amber-400"><p className="font-semibold">Analytics</p><p className="mt-0.5 text-xs text-neutral-500">Command centre for your area.</p></Card></Link>}
+        <Link href="/admin/assistant"><Card className="h-full transition hover:border-amber-400"><p className="font-semibold">Ask MUI</p><p className="mt-0.5 text-xs text-neutral-500">Teach the assistant, and answer what it couldn't.</p></Card></Link>
       </div>
 
       <Card className="mt-4">
