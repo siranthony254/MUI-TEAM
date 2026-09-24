@@ -26,8 +26,8 @@ export function ChannelPicker() {
 }
 
 export function TaskForm({
-  members, projects, departments, canAssign, defaultDue = '',
-}: { members: Option[]; projects: Option[]; departments: Option[]; canAssign: boolean; defaultDue?: string }) {
+  members, projects, departments, canAssign, defaultDue = '', defaultDepartmentId = '',
+}: { members: Option[]; projects: Option[]; departments: Option[]; canAssign: boolean; defaultDue?: string; defaultDepartmentId?: string }) {
   const router = useRouter()
   const filesRef = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
@@ -93,7 +93,7 @@ export function TaskForm({
           </select>
         </label>
         <label className="block text-sm font-medium">Department
-          <select name="department_id" defaultValue="" className={inputClass}>
+          <select name="department_id" defaultValue={defaultDepartmentId} className={inputClass}>
             <option value="">None</option>
             {departments.map((d) => <option key={d.id} value={d.id}>{d.label}</option>)}
           </select>

@@ -12,6 +12,7 @@ import { ManagePanel, ConfirmButton } from '@/components/ConfirmButton'
 import { AddLinkForm, UploadFileForm } from '../../resources/UploadForms'
 import { deleteResource } from '../../resources/actions'
 import { saveDepartment } from '../../admin/departments/actions'
+import { TaskForm } from '../../tasks/TaskForm'
 import { DOC_TEMPLATES } from '@/lib/documents/templates'
 import { DepartmentTemplatesPicker } from './DepartmentTemplatesPicker'
 
@@ -149,6 +150,18 @@ export default async function DepartmentPage({ params }: { params: Promise<{ id:
           </tbody>
         </table>
       </Card>
+
+      {(isDirector || isExecOrAbove(me)) && canAssign && (
+        <ManagePanel label="Assign a task to your team">
+          <TaskForm
+            canAssign
+            defaultDepartmentId={dept.id}
+            members={members.map((m) => ({ id: m.id, label: m.title ? `${m.full_name} — ${m.title}` : m.full_name }))}
+            projects={((projectRows ?? []) as Pick<Project, 'id' | 'name'>[]).map((p) => ({ id: p.id, label: p.name }))}
+            departments={[{ id: dept.id, label: dept.name }]}
+          />
+        </ManagePanel>
+      )}
 
       {(projectRows ?? []).length > 0 && (
         <>
