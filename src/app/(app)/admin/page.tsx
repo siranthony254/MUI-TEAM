@@ -135,7 +135,7 @@ export default async function AdminHome() {
         <Link href="/activity" className="mt-3 inline-block text-sm font-medium text-amber-700 hover:underline">Organisation-wide activity →</Link>
       </Card>
 
-      <Card className="mt-4">
+      <Card id="new-member" className="mt-4">
         <SectionTitle>Add a team member</SectionTitle>
         <AddMemberForm
           departments={(departments.data ?? []).map((d) => ({ id: d.id, label: d.name }))}

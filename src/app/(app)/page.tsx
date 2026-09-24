@@ -1,6 +1,9 @@
 import Link from 'next/link'
 import { AlarmClock, ArrowUpRight, CalendarClock, CheckCircle2, Clock4, Compass, Eye, ListTodo, Send, Target } from 'lucide-react'
 import { requireMember, isExecOrAbove } from '@/lib/auth'
+import { can } from '@/lib/permissions'
+import { OversightWidgets } from './OversightWidgets'
+import { SecretaryWidgets } from './SecretaryWidgets'
 import { createClient } from '@/lib/supabase/server'
 import { isDueToday, isOverdue, fmtDue, PRIORITY_ORDER } from '@/lib/tasks'
 import type { Task } from '@/lib/types'
@@ -232,6 +235,9 @@ export default async function Dashboard() {
           See my full role, responsibilities and commitments →
         </Link>
       </Card>
+
+      {(await can(me, 'org_oversight')) && <OversightWidgets />}
+      <SecretaryWidgets me={me} />
     </>
   )
 }

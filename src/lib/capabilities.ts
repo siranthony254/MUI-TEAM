@@ -14,6 +14,7 @@ export const CAPABILITIES = [
   { id: 'send_campaign', label: 'Send campaigns', hint: 'A targeted message over app, email, push or SMS' },
   { id: 'view_analytics', label: 'View the command centre', hint: 'Analytics for their own area (organisation-wide for admins and the Director)' },
   { id: 'submit_department_report', label: 'Submit department reports', hint: 'Reports on behalf of a department they lead' },
+  { id: 'org_oversight', label: 'Organisation-wide oversight on the dashboard', hint: 'Deadlines, overdue work, meetings and report status across every department, not just their own' },
 ] as const
 
 export type Capability = (typeof CAPABILITIES)[number]['id']
@@ -21,7 +22,7 @@ export type Matrix = Record<EditableLevel, Record<Capability, boolean>>
 
 /** Used until an admin saves changes, and if the table is unreachable. Mirrors the seeded defaults. */
 export const DEFAULT_MATRIX: Matrix = {
-  executive: Object.fromEntries(CAPABILITIES.map((c) => [c.id, c.id !== 'send_campaign'])) as Record<Capability, boolean>,
+  executive: Object.fromEntries(CAPABILITIES.map((c) => [c.id, c.id !== 'send_campaign' && c.id !== 'org_oversight'])) as Record<Capability, boolean>,
   department_director: Object.fromEntries(CAPABILITIES.map((c) => [c.id, ['assign_tasks', 'submit_department_report', 'add_event', 'add_resource'].includes(c.id)])) as Record<Capability, boolean>,
   member: Object.fromEntries(CAPABILITIES.map((c) => [c.id, false])) as Record<Capability, boolean>,
 }
@@ -41,6 +42,12 @@ export type Scope = (typeof ADMIN_SCOPES)[number]['id']
 /** Ready-made starting points for the access panel; everything can still be adjusted. */
 export const ACCESS_PRESETS: { id: string; label: string; hint: string; caps: Partial<Record<Capability, 'allow' | 'deny'>>; scopes: Scope[] }[] = [
   { id: 'standard', label: 'Standard', hint: 'Follows their level. Nothing extra.', caps: {}, scopes: [] },
+  {
+    id: 'deputy', label: 'Vice Executive Director / Deputy',
+    hint: 'Stands in for the Director: organisation-wide oversight of deadlines, meetings and report status, not day-to-day admin.',
+    caps: { org_oversight: 'allow', view_analytics: 'allow', schedule_meeting: 'allow', record_decision: 'allow', add_event: 'allow' },
+    scopes: ['admin.settings'],
+  },
   {
     id: 'secretary', label: 'Secretary / office admin',
     hint: 'Runs people and onboarding, sends campaigns, sees analytics, keeps the calendar and meetings.',
