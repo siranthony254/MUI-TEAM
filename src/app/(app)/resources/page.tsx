@@ -40,6 +40,9 @@ export default async function Resources({
   return (
     <>
       <PageTitle sub="MUI's shared knowledge: governance, policies, manuals, templates and more.">Resources</PageTitle>
+      <Link href="/documents" className="mb-4 block text-sm font-medium text-amber-700 hover:underline">
+        Looking for a fillable document instead? Browse Documents &amp; Templates →
+      </Link>
 
       <form className="mb-3 flex gap-2">
         {category && <input type="hidden" name="category" value={category} />}

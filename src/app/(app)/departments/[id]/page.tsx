@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ExternalLink, FileText, FolderOpen } from 'lucide-react'
+import { ExternalLink, FileText, FolderOpen, Mic } from 'lucide-react'
 import { requireMember, isExecOrAbove, hasOrgView } from '@/lib/auth'
 import { can } from '@/lib/permissions'
 import { createClient } from '@/lib/supabase/server'
@@ -11,6 +11,8 @@ import { Card, PageTitle, SectionTitle, StatusBadge, EmptyState } from '@/compon
 import { ManagePanel, ConfirmButton } from '@/components/ConfirmButton'
 import { AddLinkForm, UploadFileForm } from '../../resources/UploadForms'
 import { deleteResource } from '../../resources/actions'
+import { DOC_TEMPLATES } from '@/lib/documents/templates'
+import { DepartmentTemplatesPicker } from './DepartmentTemplatesPicker'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,7 +28,7 @@ export default async function DepartmentPage({ params }: { params: Promise<{ id:
   if (!dept) notFound()
 
   const month = monthRange()
-  const [{ data: memberRows }, { data: loadRows }, { data: statRows }, { data: projectRows }, { data: channel }, { data: reportRows }, { data: docRows }] = await Promise.all([
+  const [{ data: memberRows }, { data: loadRows }, { data: statRows }, { data: projectRows }, { data: channel }, { data: reportRows }, { data: docRows }, { data: templateRows }] = await Promise.all([
     supabase.from('team_members').select('*').eq('department_id', id).eq('active', true).order('full_name'),
     supabase.rpc('department_member_load', { did: id }),
     supabase.rpc('department_stats_all'),
@@ -34,8 +36,11 @@ export default async function DepartmentPage({ params }: { params: Promise<{ id:
     supabase.from('channels').select('id').eq('department_id', id).eq('kind', 'department').maybeSingle(),
     supabase.from('reports').select('id, status, author_id, kind').eq('department_id', id).eq('kind', 'department').gte('period_start', month.start).lte('period_start', month.end),
     supabase.from('resources').select('*').eq('department_id', id).order('created_at', { ascending: false }),
+    supabase.from('department_document_templates').select('template_slug').eq('department_id', id),
   ])
   const docs = (docRows ?? []) as Resource[]
+  const enabledSlugs = (templateRows ?? []).map((r) => r.template_slug)
+  const enabledTemplates = DOC_TEMPLATES.filter((t) => enabledSlugs.includes(t.slug))
 
   const members = (memberRows ?? []) as TeamMember[]
   const load = (loadRows ?? []) as Load[]
@@ -132,7 +137,30 @@ export default async function DepartmentPage({ params }: { params: Promise<{ id:
       )}
 
       <div id="documents" className="mt-6 scroll-mt-20" />
-      <SectionTitle icon={FolderOpen}>Documents &amp; templates</SectionTitle>
+      <SectionTitle icon={Mic}>Templates</SectionTitle>
+      {enabledTemplates.length === 0 ? (
+        <Card><EmptyState icon={Mic} label="No templates featured yet." hint="Fillable, downloadable documents specific to this department's work." /></Card>
+      ) : (
+        <div className="grid gap-2 sm:grid-cols-2">
+          {enabledTemplates.map((t) => (
+            <Link key={t.slug} href={`/documents/${t.slug}`}>
+              <Card className="flex items-center gap-3 transition-transform duration-150 hover:-translate-y-0.5 hover:shadow-md">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400"><Mic size={16} aria-hidden /></span>
+                <span className="min-w-0"><span className="block truncate font-medium">{t.name}</span><span className="block text-xs text-neutral-500 dark:text-neutral-400">Fill in and download</span></span>
+              </Card>
+            </Link>
+          ))}
+        </div>
+      )}
+      <p className="mt-2 text-sm"><Link href="/documents" className="font-medium text-amber-700 hover:underline">Browse all templates →</Link></p>
+      {(isDirector || me.role === 'super_admin' || me.is_director) && (
+        <ManagePanel label="Choose this department's templates">
+          <DepartmentTemplatesPicker departmentId={id} selected={enabledSlugs} />
+        </ManagePanel>
+      )}
+
+      <div className="mt-6" />
+      <SectionTitle icon={FolderOpen}>Files</SectionTitle>
       {docs.length === 0 ? (
         <Card><EmptyState icon={FolderOpen} label="Nothing here yet." hint="Planners, guides, checklists — anything specific to this department's work." /></Card>
       ) : (

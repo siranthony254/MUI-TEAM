@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, CheckSquare, FolderKanban, Users, Bell, Settings,
-  CalendarDays, Gavel, FileText, BarChart3, MessageSquare, CalendarRange, Library, UserCheck, History, Megaphone, Landmark, Building2, Mic,
+  CalendarDays, Gavel, FileText, BarChart3, MessageSquare, CalendarRange, Library, UserCheck, History, Megaphone, Landmark, Building2, Mic, ClipboardList,
 } from 'lucide-react'
 
 type Item = { href: string; label: string; icon: typeof Bell; show?: 'exec' | 'admin' | 'director' }
@@ -17,6 +17,7 @@ export const NAV_ITEMS: Item[] = [
   { href: '/decisions', label: 'Decisions', icon: Gavel },
   { href: '/reports', label: 'Reports', icon: FileText },
   { href: '/resources', label: 'Resources', icon: Library },
+  { href: '/documents', label: 'Documents & Templates', icon: ClipboardList },
   { href: '/conversations', label: 'Conversations', icon: Mic },
   { href: '/departments', label: 'Departments', icon: Building2 },
   { href: '/people', label: 'People', icon: Users },
