@@ -558,16 +558,19 @@ async function main() {
   if (has14) {
     let deptTemplateExisted = false
     await t('report templates: a department director can set their own template; others cannot', async () => {
+      noErr(await svc.from('departments').update({ director_id: E.id }).eq('id', created.dept)) // E directs this department for this test only
       const before = await svc.from('report_templates').select('id').eq('department_id', created.dept).maybeSingle()
       deptTemplateExisted = !!before.data
       const sections = [{ key: 'zztest_field', label: `${P} Field`, hint: 'A department-specific question.' }]
-      const asPeer = await D.client.from('report_templates').upsert(
-        { department_id: created.dept, name: 'x', sections }, { onConflict: 'department_id' },
-      ).select('id')
+      // Mirrors the real app (select-then-insert-or-update, never a raw upsert): report_templates'
+      // uniqueness is a partial index, which PostgREST's onConflict can't target directly.
+      const asPeer = before.data
+        ? await D.client.from('report_templates').update({ name: 'x', sections }).eq('id', before.data.id).select('id')
+        : await D.client.from('report_templates').insert({ department_id: created.dept, name: 'x', sections }).select('id')
       ok(asPeer.error || asPeer.data.length === 0, 'a non-director set another department\'s template')
-      noErr(await E.client.from('report_templates').upsert(
-        { department_id: created.dept, name: `${P} dept report`, sections }, { onConflict: 'department_id' },
-      ))
+      noErr(before.data
+        ? await E.client.from('report_templates').update({ name: `${P} dept report`, sections }).eq('id', before.data.id)
+        : await E.client.from('report_templates').insert({ department_id: created.dept, name: `${P} dept report`, sections }))
     })
 
     await t('starting a department report snapshots that department\'s template', async () => {
@@ -580,6 +583,7 @@ async function main() {
     })
 
     if (!deptTemplateExisted) await svc.from('report_templates').delete().eq('department_id', created.dept)
+    await svc.from('departments').update({ director_id: null }).eq('id', created.dept)
   }
 
 }
