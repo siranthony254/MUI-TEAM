@@ -2,15 +2,16 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ExternalLink, FileText, FolderOpen, Mic } from 'lucide-react'
 import { requireMember, isExecOrAbove, hasOrgView } from '@/lib/auth'
-import { can } from '@/lib/permissions'
+import { can, hasScope } from '@/lib/permissions'
 import { createClient } from '@/lib/supabase/server'
 import { fmtDue, isOverdue } from '@/lib/tasks'
 import { fmtDay, monthRange } from '@/lib/time'
 import { ROLE_LABEL, type Project, type Report, type Resource, type Task, type TeamMember } from '@/lib/types'
-import { Card, PageTitle, SectionTitle, StatusBadge, EmptyState } from '@/components/ui'
+import { Card, PageTitle, SectionTitle, StatusBadge, EmptyState, inputClass, buttonClass } from '@/components/ui'
 import { ManagePanel, ConfirmButton } from '@/components/ConfirmButton'
 import { AddLinkForm, UploadFileForm } from '../../resources/UploadForms'
 import { deleteResource } from '../../resources/actions'
+import { saveDepartment } from '../../admin/departments/actions'
 import { DOC_TEMPLATES } from '@/lib/documents/templates'
 import { DepartmentTemplatesPicker } from './DepartmentTemplatesPicker'
 
@@ -50,6 +51,10 @@ export default async function DepartmentPage({ params }: { params: Promise<{ id:
     ? await supabase.from('team_members').select('full_name').eq('id', dept.director_id).maybeSingle()
     : { data: null }
   const directorName = director?.full_name ?? directorRow?.full_name
+  const canManageDirector = await hasScope(me, 'admin.departments')
+  const { data: eligible } = canManageDirector
+    ? await supabase.from('team_members').select('id, full_name, department_id').eq('active', true).neq('role', 'guest').order('full_name')
+    : { data: [] as { id: string; full_name: string; department_id: string | null }[] }
 
   // The person may see per-member workload only if they lead, run, or oversee this department.
   const detailed = load.length > 0 || hasOrgView(me) || isExecOrAbove(me) || dept.director_id === me.id
@@ -72,10 +77,31 @@ export default async function DepartmentPage({ params }: { params: Promise<{ id:
       <Link href="/departments" className="text-sm text-neutral-500 hover:underline">← Departments</Link>
       <div className="mt-2" />
       <PageTitle sub={dept.description ?? undefined}>{dept.name}</PageTitle>
-      <p className="-mt-3 mb-5 text-sm text-neutral-600">
+      <p className="-mt-3 mb-2 text-sm text-neutral-600">
         {directorName ? <>Director: <strong>{directorName}</strong></> : 'No director assigned yet.'}
         {isDirector && <span className="ml-2 rounded bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">You lead this department</span>}
       </p>
+      {canManageDirector && (
+        <details className="group mb-5">
+          <summary className="cursor-pointer select-none text-sm font-medium text-amber-700 hover:underline">
+            {directorName ? 'Change director' : 'Assign a director'}
+          </summary>
+          <form action={saveDepartment} className="mt-2 flex flex-wrap items-end gap-2">
+            <input type="hidden" name="id" value={dept.id} />
+            <input type="hidden" name="name" value={dept.name} />
+            <input type="hidden" name="description" value={dept.description ?? ''} />
+            <label className="block text-sm font-medium">Director
+              <select name="director_id" defaultValue={dept.director_id ?? ''} className={`${inputClass} sm:w-64`}>
+                <option value="">No director</option>
+                {(eligible ?? []).map((p) => (
+                  <option key={p.id} value={p.id}>{p.full_name}{p.department_id === dept.id ? '' : ' (other department)'}</option>
+                ))}
+              </select>
+            </label>
+            <button className={`${buttonClass} !py-2`}>Save</button>
+          </form>
+        </details>
+      )}
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Card><p className="text-3xl font-bold">{stat?.member_count ?? members.length}</p><p className="text-sm text-neutral-600">Members</p></Card>
