@@ -52,6 +52,18 @@ export interface DispatchResult {
  * enabled channel the recipient wants. Safe to call concurrently: each channel
  * is claimed with a conditional update before sending, and released on failure.
  */
+/** Runs one housekeeping RPC; a problem with this one step (e.g. a migration not run yet on an
+ *  older install) is logged and skipped rather than aborting the whole run — actual delivery
+ *  further down must still happen even if some maintenance step can't. */
+async function step(admin: ReturnType<typeof createAdminClient>, name: string, fn: () => PromiseLike<unknown>) {
+  try {
+    return await fn()
+  } catch (err) {
+    console.error(`[dispatch] housekeeping step "${name}" failed (continuing):`, err)
+    return null
+  }
+}
+
 export async function runDispatch(): Promise<DispatchResult> {
   const admin = createAdminClient()
 
@@ -61,17 +73,18 @@ export async function runDispatch(): Promise<DispatchResult> {
     // Recurring tasks first, so the new occurrence can be reminded about in the same run.
     const { data: rec } = await admin.from('org_settings').select('value').eq('key', 'recurring_enabled').maybeSingle()
     if (rec?.value !== 'false') {
-      const { data: made } = await admin.rpc('spawn_recurring_tasks')
+      const made = await step(admin, 'spawn_recurring_tasks', () => admin.rpc('spawn_recurring_tasks').then((r) => r.data))
       spawned = (made as number | null) ?? 0
     }
-    // Housekeeping first: delegated admin access that has run out, and announcements whose time has come.
-    await admin.rpc('expire_admin_delegations')
-    await admin.rpc('publish_due_announcements')
-    await admin.rpc('generate_meeting_reminders')
-    // Anything still unread keeps pushing again for a while instead of firing once and going quiet.
-    await admin.rpc('renotify_unread')
-    const { data: reminderCount } = await admin.rpc('generate_task_reminders')
+    // Housekeeping: delegated admin access that has run out, announcements whose time has come,
+    // meeting reminders, and re-pushing anything still unread. None of these block delivery below.
+    await step(admin, 'expire_admin_delegations', () => admin.rpc('expire_admin_delegations'))
+    await step(admin, 'publish_due_announcements', () => admin.rpc('publish_due_announcements'))
+    await step(admin, 'generate_meeting_reminders', () => admin.rpc('generate_meeting_reminders'))
+    await step(admin, 'renotify_unread', () => admin.rpc('renotify_unread'))
+    const reminderCount = await step(admin, 'generate_task_reminders', () => admin.rpc('generate_task_reminders').then((r) => r.data))
     reminders = (reminderCount as number | null) ?? 0
+
     const result = await dispatchPending()
     await admin.from('system_runs').insert({ reminders, spawned, sent: result.sent, failed: result.failed })
     return { ...result, reminders, spawned }
