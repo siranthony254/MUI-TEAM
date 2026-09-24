@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { KeyRound, Trash2 } from 'lucide-react'
+import { KeyRound, Trash2, Radio } from 'lucide-react'
 import { notFound } from 'next/navigation'
 import { canDelegate } from '@/lib/grants'
 import { getMatrix, requireScope } from '@/lib/permissions'
@@ -9,6 +9,8 @@ import { ADMIN_SCOPES, CAPABILITIES, type Capability, type Scope } from '@/lib/c
 import { createClient } from '@/lib/supabase/server'
 import type { TeamMember } from '@/lib/types'
 import { Card, PageTitle, SectionTitle } from '@/components/ui'
+import { fmtDateTime } from '@/lib/time'
+import { getActivationStatus } from '@/lib/admin/activation'
 import { AccessPanel } from './AccessPanel'
 import { EditMemberForm } from './EditMemberForm'
 import { DeleteMemberForm } from './DeleteMemberForm'
@@ -25,9 +27,10 @@ export default async function EditMember({ params }: { params: Promise<{ id: str
   const member = data as TeamMember
   const { count: directors } = await supabase.from('team_members').select('id', { count: 'exact', head: true }).eq('is_director', true).eq('active', true)
   const topRolesLocked = (directors ?? 0) > 0 && !me.is_director
-  const [{ data: departments }, { data: others }] = await Promise.all([
+  const [{ data: departments }, { data: others }, activation] = await Promise.all([
     supabase.from('departments').select('id, name').order('name'),
     supabase.from('team_members').select('id, full_name').neq('id', id).eq('active', true).order('full_name'),
+    getActivationStatus(id),
   ])
 
   return (
@@ -41,6 +44,25 @@ export default async function EditMember({ params }: { params: Promise<{ id: str
       </div>
 
       <Card>
+        <SectionTitle icon={Radio}>Account activity</SectionTitle>
+        <dl className="grid gap-3 text-sm sm:grid-cols-2">
+          <div><dt className="text-neutral-500">Welcome email</dt>
+            <dd className="font-medium">{member.welcome_email_sent_at ? `Sent ${fmtDateTime(member.welcome_email_sent_at)}` : 'Not sent (or not confirmed) yet'}</dd></div>
+          <div><dt className="text-neutral-500">First signed in</dt>
+            <dd className={`font-medium ${activation?.firstSignInAt ? '' : 'text-orange-700'}`}>{activation?.firstSignInAt ? fmtDateTime(activation.firstSignInAt) : "Hasn't logged in yet"}</dd></div>
+          <div><dt className="text-neutral-500">Last active in the app</dt>
+            <dd className="font-medium">{member.last_seen_at ? fmtDateTime(member.last_seen_at) : 'Never'}</dd></div>
+          <div><dt className="text-neutral-500">Invited</dt>
+            <dd className="font-medium">{activation?.invitedAt ? fmtDateTime(activation.invitedAt) : '—'}</dd></div>
+        </dl>
+        {activation && !activation.firstSignInAt && (
+          <p className="mt-3 rounded-lg bg-orange-50 p-3 text-xs text-orange-900 dark:bg-orange-500/10 dark:text-orange-300">
+            They haven&apos;t signed in yet. If it&apos;s been a while, check the email address is right, or use &ldquo;Reset access&rdquo; below to resend a fresh password.
+          </p>
+        )}
+      </Card>
+
+      <Card className="mt-4">
         <EditMemberForm
           member={member}
           departments={(departments ?? []).map((d) => ({ id: d.id, label: d.name }))}

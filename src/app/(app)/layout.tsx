@@ -16,12 +16,14 @@ import { assistantEnabled } from '@/lib/assistant/gemini'
 import { PageTransition } from '@/components/PageTransition'
 import { BadgeSync } from '@/components/BadgeSync'
 import { AskMui } from '@/components/assistant/AskMui'
+import { touchPresence } from '@/lib/presence'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const me = await requireMember()
   // New members finish their profile first.
   // (Only an explicit null means "not set up": before migration 9 the column doesn't exist and everyone is treated as done.)
   if (me.profile_completed_at === null) redirect('/welcome')
+  touchPresence(me.id, me.last_seen_at)
   // One shared fetch for the whole request (the member, access, settings and badge counts).
   const shell = (await getShell())!
   const muted = new Set(computeMutedKinds(shell.prefs, shell.settings.mandatory_groups))

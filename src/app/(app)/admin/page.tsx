@@ -7,6 +7,7 @@ import { fmtDateTime } from '@/lib/time'
 import { ROLE_LABEL, type TeamMember } from '@/lib/types'
 import { Card, PageTitle, SectionTitle, buttonClass, inputClass } from '@/components/ui'
 import { ServiceKeyNotice } from '@/components/ServiceKeyNotice'
+import { getActivationStatusMap } from '@/lib/admin/activation'
 import { AddMemberForm } from './AddMemberForm'
 import { addDepartment } from './actions'
 
@@ -62,6 +63,7 @@ export default async function AdminHome() {
   const runAgeMin = run ? (Date.now() - new Date(run.ran_at).getTime()) / 60000 : null
   const schedulerOk = run ? runAgeMin! <= 15 && !run.error : false
   const noPhones = active.filter((m) => m.notify_sms && !m.phone).length
+  const activation = has('admin.people') ? await getActivationStatusMap(active.map((m) => m.id)) : new Map()
   const director = active.find((m) => m.is_director)
   const topRolesLocked = !!director && !me.is_director
 
@@ -120,17 +122,23 @@ export default async function AdminHome() {
       <Card className="mt-4">
         <SectionTitle>Team ({people.length})</SectionTitle>
         <ul className="divide-y divide-neutral-100">
-          {people.map((m) => (
-            <li key={m.id}>
-              <Link href={`/admin/people/${m.id}`} className={`flex items-center justify-between gap-3 py-2 hover:bg-neutral-50 ${m.active ? '' : 'opacity-60'}`}>
-                <span className="min-w-0">
-                  <span className="block truncate font-medium">{m.full_name}{!m.active && ' (inactive)'}</span>
-                  <span className="block truncate text-xs text-neutral-500">{m.title ?? '—'} · {m.email}</span>
-                </span>
-                <span className="text-xs font-medium text-neutral-600">{ROLE_LABEL[m.role]}</span>
-              </Link>
-            </li>
-          ))}
+          {people.map((m) => {
+            const neverSignedIn = m.active && !activation.get(m.id)?.firstSignInAt
+            return (
+              <li key={m.id}>
+                <Link href={`/admin/people/${m.id}`} className={`flex items-center justify-between gap-3 py-2 hover:bg-neutral-50 dark:hover:bg-white/5 ${m.active ? '' : 'opacity-60'}`}>
+                  <span className="min-w-0">
+                    <span className="block truncate font-medium">{m.full_name}{!m.active && ' (inactive)'}</span>
+                    <span className="block truncate text-xs text-neutral-500">{m.title ?? '—'} · {m.email}</span>
+                  </span>
+                  <span className="flex shrink-0 items-center gap-2">
+                    {neverSignedIn && <span className="rounded-full bg-orange-100 px-2 py-0.5 text-[11px] font-medium text-orange-800 dark:bg-orange-500/15 dark:text-orange-300">Never logged in</span>}
+                    <span className="text-xs font-medium text-neutral-600">{ROLE_LABEL[m.role]}</span>
+                  </span>
+                </Link>
+              </li>
+            )
+          })}
         </ul>
         <Link href="/activity" className="mt-3 inline-block text-sm font-medium text-amber-700 hover:underline">Organisation-wide activity →</Link>
       </Card>

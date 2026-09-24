@@ -136,8 +136,11 @@ export async function addMember(_prev: AdminState | undefined, formData: FormDat
   const sentTo: string[] = []
   const failedChannels: string[] = []
   if (channelEnabled.email()) {
-    try { await sendWelcomeEmail(email, full_name, shown); sentTo.push('emailed') }
-    catch (err) { failedChannels.push('email'); console.error('[addMember] welcome email failed:', err) }
+    try {
+      await sendWelcomeEmail(email, full_name, shown)
+      sentTo.push('emailed')
+      await admin.from('team_members').update({ welcome_email_sent_at: new Date().toISOString() }).eq('id', userId!)
+    } catch (err) { failedChannels.push('email'); console.error('[addMember] welcome email failed:', err) }
   }
   const validPhone = normalizePhone(phone)
   if (validPhone && channelEnabled.sms()) {
@@ -234,8 +237,11 @@ export async function resetAccess(_prev: AdminState | undefined, formData: FormD
   const sentTo: string[] = []
   const failedChannels: string[] = []
   if (m?.email && channelEnabled.email()) {
-    try { await sendWelcomeEmail(m.email, m.full_name, password); sentTo.push('emailed') }
-    catch (err) { failedChannels.push('email'); console.error('[resetAccess] email failed:', err) }
+    try {
+      await sendWelcomeEmail(m.email, m.full_name, password)
+      sentTo.push('emailed')
+      await admin.from('team_members').update({ welcome_email_sent_at: new Date().toISOString() }).eq('id', id)
+    } catch (err) { failedChannels.push('email'); console.error('[resetAccess] email failed:', err) }
   }
   const validPhone = normalizePhone(m?.phone ?? null)
   if (validPhone && channelEnabled.sms()) {

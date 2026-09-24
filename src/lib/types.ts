@@ -27,6 +27,8 @@ export interface TeamMember {
   start_date: string | null
   avatar_url: string | null
   profile_completed_at: string | null
+  last_seen_at: string | null
+  welcome_email_sent_at: string | null
   /** Departments this person directs (filled in by getMember). */
   directed_departments?: string[]
   admin_until: string | null
